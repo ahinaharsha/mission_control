@@ -56,3 +56,12 @@ export type InvoiceStatus =
   | "Overdue"
   | "Deleted";
 
+export interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+}
