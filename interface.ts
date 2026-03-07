@@ -9,7 +9,7 @@ export interface FromDetails {
   businessName: string;
   address: Address;
   taxId: string;
-  abnNumber: string | number;
+  abnNumber: number;
 }
 
 export interface CustomerInformation {
