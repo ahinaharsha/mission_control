@@ -63,14 +63,17 @@ export function validateCustomer(customer: CustomerInformation): ValidationError
     return errors;
   }
 
-  if (!isNonEmptyString(customer.fullName))
+  if (!isNonEmptyString(customer.fullName)) {
     errors.push({ field: "customer.fullName", message: "Customer full name is required." });
+  }
 
-  if (!isNonEmptyString(customer.email) || !EMAIL_REGEX.test(customer.email))
+  if (!isNonEmptyString(customer.email) || !EMAIL_REGEX.test(customer.email)) {
     errors.push({ field: "customer.email", message: "A valid customer email address is required." });
+  }
 
-  if (!isNonEmptyString(customer.phone) || !PHONE_REGEX.test(customer.phone))
-    errors.push({ field: "customer.phone", message: "A valid customer phone number is required." });  
+  if (!isNonEmptyString(customer.phone) || !PHONE_REGEX.test(customer.phone)) {
+    errors.push({ field: "customer.phone", message: "A valid customer phone number is required." });
+  }  
 
   validateAddress(customer.billingAddress).forEach(e => errors.push(e));
   validateAddress(customer.shippingAddress).forEach(e => errors.push(e));
