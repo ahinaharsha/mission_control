@@ -45,7 +45,6 @@ export interface LineItem {
   description: string;
   quantity: number;
   rate: number;
-  amount?: number;
 }
 
 export type InvoiceStatus =
