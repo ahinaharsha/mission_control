@@ -9,10 +9,12 @@ export interface FromDetails {
   businessName: string;
   address: Address;
   taxId: string;
-  abnNumber: number;
+  abnNumber: string;
+  dueDate: Date;
 }
 
 export interface CustomerInformation {
+  id: string;
   fullName: string;
   email: string;
   phone: string;
@@ -36,6 +38,7 @@ export interface InvoiceInput {
   customer: CustomerInformation;
   lineItems: LineItem[];
   currency: string;
+  paymentTermsNote?: string;
   exchangeRate?: number;
   baseCurrency?: string;
   tax: TaxDetails;
@@ -64,4 +67,10 @@ export interface ValidationError {
   field: string;
   message: string;
   code: number;
+}
+
+export interface generatorResult{
+  input ?:string;
+  message:string;
+  code:number;
 }
