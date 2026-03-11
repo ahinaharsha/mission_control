@@ -53,6 +53,10 @@ export function validateFromDetails(from: FromDetails): ValidationError[] {
     errors.push({ field: "from.abnNumber", message: "ABN number is required." });
   }
 
+  if (!from.dueDate) {
+    errors.push({ field: "from.dueDate", message: "Due date is required." });
+  }
+
   return errors;
 }
 

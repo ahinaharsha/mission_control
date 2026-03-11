@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@pixeldrive/peppol-toolkit": "^0.3.0",
+    "xml-js": "^1.6.11",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.4.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6"
+  }
+}

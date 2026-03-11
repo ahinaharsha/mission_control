@@ -9,15 +9,17 @@ export interface FromDetails {
   businessName: string;
   address: Address;
   taxId: string;
-  abnNumber: number;
+  abnNumber: string;
+  dueDate:Date;
 }
 
 export interface CustomerInformation {
+  id:string;
   fullName: string;
   email: string;
   phone: string;
   billingAddress: Address;
-  shippingAddress: Address;
+  shippingAddress : Address;
 }
 
 export interface LineItem {
@@ -40,6 +42,7 @@ export interface InvoiceInput {
   baseCurrency?: string;
   tax: TaxDetails;
   from: FromDetails;
+  paymentTermsNote?: string;
 }
 export interface LineItem {
   description: string;
