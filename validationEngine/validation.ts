@@ -43,13 +43,15 @@ export function validateFromDetails(from: FromDetails): ValidationError[] {
     errors.push({ field: "from.businessName", message: "Business name is required.", code: 400 });
   }
 
-  validateAddress(from.address).forEach(e => errors.push(e));
+  validateAddress(from.address).forEach(e => {
+    errors.push({ ...e, field: `from.address.${e.field}` });
+  });
 
   if (!isNonEmptyString(from.taxId)) {
     errors.push({ field: "from.taxId", message: "Tax ID is required.", code: 400 });
   }
 
-  if (!from.abnNumber) {
+  if (!isNonEmptyString(from.abnNumber)) {
     errors.push({ field: "from.abnNumber", message: "ABN number is required.", code: 400 });
   }
 
@@ -76,8 +78,13 @@ export function validateCustomer(customer: CustomerInformation): ValidationError
     errors.push({ field: "customer.phone", message: "A valid customer phone number is required.", code: 400 });
   }  
 
-  validateAddress(customer.billingAddress).forEach(e => errors.push(e));
-  validateAddress(customer.shippingAddress).forEach(e => errors.push(e));
+  validateAddress(customer.billingAddress).forEach(e => {
+    errors.push({ ...e, field: `billingAddress.${e.field}` });
+  });
+
+  validateAddress(customer.shippingAddress).forEach(e => {
+    errors.push({ ...e, field: `shippingAddress.${e.field}` });
+  });
 
   return errors;
 }
@@ -118,7 +125,7 @@ export function validateCurrency(currency: string, exchangeRate?: number, baseCu
       errors.push({ field: "baseCurrency", message: "Base currency must be a valid ISO 4217 code.", code: 400 });
     }
 
-    if (!exchangeRate || exchangeRate < 0) {
+    if (!exchangeRate || exchangeRate <= 0) {
       errors.push({
         field: "exchangeRate",
         message: `Exchange rate is required when (${currency}) differs from (${baseCurrency}).`,
@@ -146,11 +153,9 @@ export function validateTax(tax: TaxDetails): ValidationError[] {
     errors.push({ field: "tax.countryCode", message: "Country code is required for tax compliance.", code: 400 });
   }
 
-  if (tax.taxPercentage < 0 || tax.taxPercentage > 100)
-    errors.push({
-      field: "tax.taxPercentage",
-      message: "Tax percentage must be a number between 0 and 100.",
-    code: 400});
-
+  if (tax.taxPercentage < 0 || tax.taxPercentage > 100) {
+    errors.push({field: "tax.taxPercentage", message: "Tax percentage must be a number between 0 and 100.", code: 400});
+  }
+  
   return errors;
 }
