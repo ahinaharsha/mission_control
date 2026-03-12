@@ -1,0 +1,53 @@
+<ID>INV-1773290629512</ID>
+<issueDate>1773290629512</issueDate>
+<DueDate/>
+<invoiceTypeCode>380</invoiceTypeCode>
+<Currency>GBP</Currency>
+<paymentTermsNote/>
+<exchangeRate/>
+<seller>
+    <name>Consortial</name>
+    <taxId>175 269 2355</taxId>
+    <abn>175 269 2355</abn>
+    <address>
+        <street>Busy Street</street>
+        <city>Farthing</city>
+        <postcode>AA99 1BB</postcode>
+        <country>GB</country>
+    </address>
+</seller>
+<buyer>
+    <name>IYT Corporation</name>
+    <email>fred@iytcorporation.gov.uk</email>
+    <phone>0127 2653214</phone>
+    <billing_address>
+        <street>Avon Way</street>
+        <city>Bridgtow</city>
+        <postcode>ZZ99 1ZZ</postcode>
+        <country>GB</country>
+    </billing_address>
+    <shipping_address>
+        <street>Avon Way</street>
+        <city>Bridgtow</city>
+        <postcode>ZZ99 1ZZ</postcode>
+        <country>GB</country>
+    </shipping_address>
+</buyer>
+<tax>
+    <taxAmount>1000</taxAmount>
+    <countryCode>AU</countryCode>
+    <taxPercentage>10</taxPercentage>
+</tax>
+<legalMonetaryTotal>
+    <lineExtensionAmount>10000</lineExtensionAmount>
+    <taxExclusiveAmount>10000</taxExclusiveAmount>
+    <taxInclusiveAmount>11000</taxInclusiveAmount>
+    <payableAmount>11000</payableAmount>
+</legalMonetaryTotal>
+<invoiceLine>
+    <ID>1</ID>
+    <description>Acme beeswax</description>
+    <quantity>100</quantity>
+    <unitPrice>100</unitPrice>
+    <lineExtensionAmount>10000</lineExtensionAmount>
+</invoiceLine>
