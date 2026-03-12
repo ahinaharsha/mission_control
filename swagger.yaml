@@ -1,4 +1,5 @@
-openapi: 3.0.0
+Here's the full updated swagger with auth routes added:
+yamlopenapi: 3.0.0
 info:
   title: Invoice API
   version: 1.0.0
@@ -6,16 +7,93 @@ info:
 
 paths:
 
-  /invoices:
+  /auth/register:
     post:
-      summary: Create a draft invoice
-      tags: [Invoices]
+      summary: Register a new user
+      tags: [Auth]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InvoiceInput'
+              $ref: '#/components/schemas/AuthInput'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request - missing email or password, or email already in use
+
+  /auth/login:
+    post:
+      summary: Login with email and password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthInput'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad request - missing email or password
+        '401':
+          description: Unauthorised - invalid email or password
+
+  /auth/logout:
+    post:
+      summary: Logout current user
+      tags: [Auth]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorised - no token provided
+
+  /invoices:
+    post:
+      summary: Create a draft invoice
+      tags: [Invoices]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              type: string
       responses:
         '201':
           description: Invoice created successfully
@@ -36,6 +114,11 @@ paths:
       tags: [Invoices]
       parameters:
         - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Invoice retrieved successfully
@@ -55,6 +138,11 @@ paths:
       tags: [Invoices]
       parameters:
         - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -84,6 +172,11 @@ paths:
       tags: [Invoices]
       parameters:
         - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: Invoice deleted successfully
@@ -102,6 +195,11 @@ paths:
       tags: [Invoices]
       parameters:
         - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Invoice status retrieved successfully
@@ -124,6 +222,11 @@ paths:
       tags: [Invoices]
       parameters:
         - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: PDF file returned successfully
@@ -153,6 +256,16 @@ components:
       description: The unique invoice ID
 
   schemas:
+
+    AuthInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
 
     Address:
       type: object
@@ -194,7 +307,7 @@ components:
         taxId:
           type: string
         abnNumber:
-          type: number
+          type: string
 
     LineItem:
       type: object

@@ -15,6 +15,23 @@
     <package name="mission_control.invoice-generator">
       <metrics statements="56" coveredstatements="49" conditionals="154" coveredconditionals="108" methods="5" coveredmethods="5"/>
       <file name="generator.ts" path="C:\Users\jaswa\Documents\GitHub\invoiceproj\mission_control\invoice-generator\generator.ts">
+<coverage generated="1773290969615" clover="3.2.0">
+  <project timestamp="1773290969615" name="All files">
+    <metrics statements="63" coveredstatements="56" conditionals="156" coveredconditionals="109" methods="6" coveredmethods="6" elements="225" coveredelements="171" complexity="0" loc="63" ncloc="63" packages="3" files="3" classes="3"/>
+    <package name="AWS">
+      <metrics statements="5" coveredstatements="5" conditionals="2" coveredconditionals="1" methods="0" coveredmethods="0"/>
+      <file name="datastore.ts" path="/home/ahina/seng2021/mission_control/AWS/datastore.ts">
+        <metrics statements="5" coveredstatements="5" conditionals="2" coveredconditionals="1" methods="0" coveredmethods="0"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="invoice-generator">
+      <metrics statements="56" coveredstatements="49" conditionals="154" coveredconditionals="108" methods="5" coveredmethods="5"/>
+      <file name="generator.ts" path="/home/ahina/seng2021/mission_control/invoice-generator/generator.ts">
         <metrics statements="56" coveredstatements="49" conditionals="154" coveredconditionals="108" methods="5" coveredmethods="5"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
@@ -77,6 +94,9 @@
     <package name="mission_control.src.helpers">
       <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
       <file name="validationHelpers.ts" path="C:\Users\jaswa\Documents\GitHub\invoiceproj\mission_control\src\helpers\validationHelpers.ts">
+    <package name="src.helpers">
+      <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+      <file name="validationHelpers.ts" path="/home/ahina/seng2021/mission_control/src/helpers/validationHelpers.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="21" type="stmt"/>
