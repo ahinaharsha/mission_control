@@ -6,29 +6,29 @@ info:
 
 paths:
 
-  /invoices:
-    post:
-      summary: Create a draft invoice
-      tags: [Invoices]
-      requestBody:
-        required: true
+/invoices:
+  post:
+    summary: Create a draft invoice
+    tags: [Invoices]
+    requestBody:
+      required: true
+      content:
+        application/xml:
+          schema:
+            type: string
+    responses:
+      '201':
+        description: Invoice created successfully
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InvoiceInput'
-      responses:
-        '201':
-          description: Invoice created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoice'
-        '400':
-          description: Bad request - missing required fields, invalid date formats, or invalid item values
-        '401':
-          description: Unauthorised - not logged in
-        '403':
-          description: Forbidden - no permission to create invoices
+              $ref: '#/components/schemas/Invoice'
+      '400':
+        description: Bad request - missing required fields, invalid date formats, or invalid item values
+      '401':
+        description: Unauthorised - not logged in
+      '403':
+        description: Forbidden - no permission to create invoices
 
   /invoices/{id}:
     get:
