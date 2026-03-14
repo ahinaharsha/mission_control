@@ -1,5 +1,5 @@
 import { Address, ValidationError, FromDetails, CustomerInformation, TaxDetails, LineItem } from "../interface";
-import { isNonEmptyString } from "../src/helpers/validationHelpers";
+import { isNonEmptyString } from "./validationHelpers";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?[0-9\s\-().]{7,20}$/;
