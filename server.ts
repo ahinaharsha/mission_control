@@ -8,12 +8,15 @@ import path from 'path';
 import process from 'process';
 import { authRegister, authLogin, authLogout, authenticate } from './AWS/auth/auth';
 import { HttpError } from './class';
+import { generateInvoice } from './invoice-generator/generator';
+
 
 // Set up web app
 const app = express();
 
 // Middleware
 app.use(json());
+app.use(express.text({ type: ['application/xml', 'text/xml'], limit: '10mb' }));
 app.use(cors());
 app.use(morgan('dev'));
 
@@ -70,6 +73,42 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
   }
 });
 
+// POST/invoices
+app.post("/invoices", async (req: Request, res: Response) => {
+  try {
+    const xml = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+
+    if (!xml || xml === '{}') {
+      return res.status(400).json({
+        error: "Missing XML order document"
+      });
+    }
+
+    const result = await generateInvoice(xml,req.header('token'));
+
+    if (result.code !== 200) {
+      return res.status(result.code).json({
+        error: result.message
+      });
+    }
+
+    return res.status(201).json({
+      message: result.message,
+      filePath: result.output
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Internal server error"
+    });
+
+  }
+});
+
+
 
 
 // Start server
@@ -84,3 +123,5 @@ process.on('SIGINT', () => {
     process.exit();
   });
 });
+
+

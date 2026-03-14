@@ -1,19 +1,257 @@
-import {describe, expect, test} from '@jest/globals';
+import {describe, expect, test, afterAll} from '@jest/globals';
 import { create_invoice, generateInvoice } from "./generator";
 import { InvoiceInput } from '../interface';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
+import { URL } from 'url';
+import pool from '../AWS/datastore';
 
+import { authLogin, authRegister } from '../AWS/auth';
 
+async function request(method: string, url: string, options?: { json?: any; node?: any; headers?: Record<string, string> }) {
+  const parsed = new URL(url);
+  const lib = parsed.protocol === 'https:' ? https : http;
+  const body = options?.json !== undefined
+    ? typeof options.json === 'string'
+      ? options.json
+      : JSON.stringify(options.json)
+    : undefined;
 
+  const headers = {
+    ...(options?.headers ?? {}),
+    ...(body
+      ? {
+          'Content-Type': typeof options?.json === 'string' ? 'application/xml' : 'application/json',
+          'Content-Length': Buffer.byteLength(body).toString(),
+        }
+      : {}),
+  };
 
-describe("Invoice Generator", () => {
-  test("should generate an invoice XML", () => {
-    const content = fs.readFileSync("./invoice.xml", "utf-8");
-    const result = generateInvoice(content);
-    expect(result.code).toBe(200);
-    expect(result.message).toBe("Invoice generated successfully.");
-    expect(result.input).toBeDefined();
+  const reqOptions = {
+    method,
+    hostname: parsed.hostname,
+    port: parsed.port,
+    path: parsed.pathname + parsed.search,
+    headers,
+  };
+
+  return new Promise<{statusCode: number; body: Buffer; headers: any}>((resolve, reject) => {
+    const req = lib.request(reqOptions, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
+      res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body: Buffer.concat(chunks), headers: res.headers }));
+    });
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
   });
+}
+
+
+const SERVER_URL = 'http://localhost:3000';
+
+const validxml = `<?xml version="1.0" encoding="UTF-8"?>
+<Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
+	<cbc:UBLVersionID>2.0</cbc:UBLVersionID>
+	<cbc:CustomizationID>urn:oasis:names:specification:ubl:xpath:Order-2.0:sbs-1.0-draft</cbc:CustomizationID>
+	<cbc:ProfileID>bpid:urn:oasis:names:draft:bpss:ubl-2-sbs-order-with-simple-response-draft</cbc:ProfileID>
+	<cbc:ID>AEG012345</cbc:ID>
+	<cbc:SalesOrderID>CON0095678</cbc:SalesOrderID>
+	<cbc:CopyIndicator>false</cbc:CopyIndicator>
+	<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+	<cbc:IssueDate>2005-06-20</cbc:IssueDate>
+	<cbc:Note>sample</cbc:Note>
+	<cac:BuyerCustomerParty>
+		<cbc:CustomerAssignedAccountID>XFB01</cbc:CustomerAssignedAccountID>
+		<cbc:SupplierAssignedAccountID>GT00978567</cbc:SupplierAssignedAccountID>
+		<cac:Party>
+			<cac:PartyName>
+				<cbc:Name>IYT Corporation</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:StreetName>Avon Way</cbc:StreetName>
+				<cbc:BuildingName>Thereabouts</cbc:BuildingName>
+				<cbc:BuildingNumber>56A</cbc:BuildingNumber>
+				<cbc:CityName>Bridgtow</cbc:CityName>
+				<cbc:PostalZone>ZZ99 1ZZ</cbc:PostalZone>
+				<cbc:CountrySubentity>Avon</cbc:CountrySubentity>
+				<cac:AddressLine>
+					<cbc:Line>3rd Floor, Room 5</cbc:Line>
+				</cac:AddressLine>
+				<cac:Country>
+					<cbc:IdentificationCode>GB</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Bridgtow District Council</cbc:RegistrationName>
+				<cbc:CompanyID>12356478</cbc:CompanyID>
+				<cbc:ExemptionReason>Local Authority</cbc:ExemptionReason>
+				<cac:TaxScheme>
+					<cbc:ID>UK VAT</cbc:ID>
+					<cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:Contact>
+				<cbc:Name>Mr Fred Churchill</cbc:Name>
+				<cbc:Telephone>0127 2653214</cbc:Telephone>
+				<cbc:Telefax>0127 2653215</cbc:Telefax>
+				<cbc:ElectronicMail>fred@iytcorporation.gov.uk</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:BuyerCustomerParty>
+	<cac:SellerSupplierParty>
+		<cbc:CustomerAssignedAccountID>CO001</cbc:CustomerAssignedAccountID>
+		<cac:Party>
+			<cac:PartyName>
+				<cbc:Name>Consortial</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:StreetName>Busy Street</cbc:StreetName>
+				<cbc:BuildingName>Thereabouts</cbc:BuildingName>
+				<cbc:BuildingNumber>56A</cbc:BuildingNumber>
+				<cbc:CityName>Farthing</cbc:CityName>
+				<cbc:PostalZone>AA99 1BB</cbc:PostalZone>
+				<cbc:CountrySubentity>Heremouthshire</cbc:CountrySubentity>
+				<cac:AddressLine>
+					<cbc:Line>The Roundabout</cbc:Line>
+				</cac:AddressLine>
+				<cac:Country>
+					<cbc:IdentificationCode>GB</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Farthing Purchasing Consortium</cbc:RegistrationName>
+				<cbc:CompanyID>175 269 2355</cbc:CompanyID>
+				<cbc:ExemptionReason>N/A</cbc:ExemptionReason>
+				<cac:TaxScheme>
+					<cbc:ID>VAT</cbc:ID>
+					<cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:Contact>
+				<cbc:Name>Mrs Bouquet</cbc:Name>
+				<cbc:Telephone>0158 1233714</cbc:Telephone>
+				<cbc:Telefax>0158 1233856</cbc:Telefax>
+				<cbc:ElectronicMail>bouquet@fpconsortial.co.uk</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:SellerSupplierParty>
+	<cac:OriginatorCustomerParty>
+		<cac:Party>
+			<cac:PartyName>
+				<cbc:Name>The Terminus</cbc:Name>
+			</cac:PartyName>
+			<cac:PostalAddress>
+				<cbc:StreetName>Avon Way</cbc:StreetName>
+				<cbc:BuildingName>Thereabouts</cbc:BuildingName>
+				<cbc:BuildingNumber>56A</cbc:BuildingNumber>
+				<cbc:CityName>Bridgtow</cbc:CityName>
+				<cbc:PostalZone>ZZ99 1ZZ</cbc:PostalZone>
+				<cbc:CountrySubentity>Avon</cbc:CountrySubentity>
+				<cac:AddressLine>
+					<cbc:Line>3rd Floor, Room 5</cbc:Line>
+				</cac:AddressLine>
+				<cac:Country>
+					<cbc:IdentificationCode>GB</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyTaxScheme>
+				<cbc:RegistrationName>Bridgtow District Council</cbc:RegistrationName>
+				<cbc:CompanyID>12356478</cbc:CompanyID>
+				<cbc:ExemptionReason>Local Authority</cbc:ExemptionReason>
+				<cac:TaxScheme>
+					<cbc:ID>UK VAT</cbc:ID>
+					<cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>
+				</cac:TaxScheme>
+			</cac:PartyTaxScheme>
+			<cac:Contact>
+				<cbc:Name>S Massiah</cbc:Name>
+				<cbc:Telephone>0127 98876545</cbc:Telephone>
+				<cbc:Telefax>0127 98876546</cbc:Telefax>
+				<cbc:ElectronicMail>smassiah@the-email.co.uk</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:OriginatorCustomerParty>
+	<cac:Delivery>
+		<cac:DeliveryAddress>
+			<cbc:StreetName>Avon Way</cbc:StreetName>
+			<cbc:BuildingName>Thereabouts</cbc:BuildingName>
+			<cbc:BuildingNumber>56A</cbc:BuildingNumber>
+			<cbc:CityName>Bridgtow</cbc:CityName>
+			<cbc:PostalZone>ZZ99 1ZZ</cbc:PostalZone>
+			<cbc:CountrySubentity>Avon</cbc:CountrySubentity>
+			<cac:AddressLine>
+				<cbc:Line>3rd Floor, Room 5</cbc:Line>
+			</cac:AddressLine>
+			<cac:Country>
+				<cbc:IdentificationCode>GB</cbc:IdentificationCode>
+			</cac:Country>
+		</cac:DeliveryAddress>
+		<cac:RequestedDeliveryPeriod>
+			<cbc:StartDate>2005-06-29</cbc:StartDate>
+			<cbc:StartTime>09:30:47.0Z</cbc:StartTime>
+			<cbc:EndDate>2005-06-29</cbc:EndDate>
+			<cbc:EndTime>09:30:47.0Z</cbc:EndTime>
+		</cac:RequestedDeliveryPeriod>
+	</cac:Delivery>
+	<cac:DeliveryTerms>
+		<cbc:SpecialTerms>1% deduction for late delivery as per contract</cbc:SpecialTerms>
+	</cac:DeliveryTerms>
+	<cac:TransactionConditions>
+		<cbc:Description>order response required; payment is by BACS or by cheque</cbc:Description>
+	</cac:TransactionConditions>
+	<cac:AnticipatedMonetaryTotal>
+		<cbc:LineExtensionAmount currencyID="GBP">100.00</cbc:LineExtensionAmount>
+		<cbc:PayableAmount currencyID="GBP">100.00</cbc:PayableAmount>
+	</cac:AnticipatedMonetaryTotal>
+	<cac:OrderLine>
+		<cbc:Note>this is an illustrative order line</cbc:Note>
+		<cac:LineItem>
+			<cbc:ID>1</cbc:ID>
+			<cbc:SalesOrderID>A</cbc:SalesOrderID>
+			<cbc:LineStatusCode>NoStatus</cbc:LineStatusCode>
+			<cbc:Quantity unitCode="KGM">100</cbc:Quantity>
+			<cbc:LineExtensionAmount currencyID="GBP">100.00</cbc:LineExtensionAmount>
+			<cbc:TotalTaxAmount currencyID="GBP">17.50</cbc:TotalTaxAmount>
+			<cac:Price>
+				<cbc:PriceAmount currencyID="GBP">100.00</cbc:PriceAmount>
+				<cbc:BaseQuantity unitCode="KGM">1</cbc:BaseQuantity>
+			</cac:Price>
+			<cac:Item>
+				<cbc:Description>Acme beeswax</cbc:Description>
+				<cbc:Name>beeswax</cbc:Name>
+				<cac:BuyersItemIdentification>
+					<cbc:ID>6578489</cbc:ID>
+				</cac:BuyersItemIdentification>
+				<cac:SellersItemIdentification>
+					<cbc:ID>17589683</cbc:ID>
+				</cac:SellersItemIdentification>
+			</cac:Item>
+		</cac:LineItem>
+	</cac:OrderLine>
+</Order>`
+
+
+  describe("Invoice Generator", () => {
+  test("should generate an invoice XML", async () => {
+    const testEmail = `test-${Date.now()}@gmail.com`;
+    await authRegister(testEmail, 'correctpassword123');
+    const tokenRes = await authLogin(testEmail, 'correctpassword123');
+
+    const res = await request('POST', `${SERVER_URL}/invoices`, {
+      headers: { token: tokenRes.token },
+      json: validxml
+    });
+
+
+    expect(res.statusCode).toBe(201);
+    const body = JSON.parse(res.body.toString());
+    expect(body.message).toBe("Invoice generated successfully.");
+    expect(body.filePath).toBeDefined();
+  });
+ 
+  
 
   test("should generate valid XML", () => {
 
@@ -68,11 +306,20 @@ describe("Invoice Generator", () => {
 
     const xml = create_invoice(input);
 
-    expect(xml).toContain("<ID>");
+    expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     expect(xml).toContain("John Doe");
     expect(xml).toContain("Product A");
 
 
+  });
+
+  afterAll(async () => {
+    try {
+      await pool.end();
+    } finally {
+      http.globalAgent.destroy();
+      https.globalAgent.destroy();
+    }
   });
 
 });
