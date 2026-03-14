@@ -70,7 +70,14 @@ export interface ValidationError {
 }
 
 export interface generatorResult{
-  input ?:string;
+  output ?:string;
   message:string;
   code:number;
+}
+
+export interface invoiceoutput{
+  invoiceId:string;
+  userId:string;
+  xml:string;
+  status:string;
 }

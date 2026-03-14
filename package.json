@@ -29,6 +29,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@pixeldrive/peppol-toolkit": "^0.5.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

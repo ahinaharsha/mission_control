@@ -1,9 +1,12 @@
-import { Address, ValidationError, FromDetails, CustomerInformation, TaxDetails, LineItem,InvoiceInput,ValidationResult, generatorResult } from "../interface";
+import { Address, ValidationError, FromDetails, CustomerInformation, TaxDetails, LineItem,InvoiceInput,ValidationResult, generatorResult,invoiceoutput } from "../interface";
 import {js2xml,xml2js} from 'xml-js';
 import fs from 'fs';
 import { validateAddress, validateFromDetails,validateCustomer,validateLineItems,validateCurrency,validateTax } from "../validationEngine/validation";
 import { HttpError } from "../class";
 import path from 'path';
+import { PeppolToolkit } from "@pixeldrive/peppol-toolkit"
+import { v4 as uuidv4 } from 'uuid';
+import pool from "../AWS/datastore";
 
 
 export function parseOrderXML(xml: string): InvoiceInput {
@@ -124,91 +127,139 @@ export function validateInvoiceInput(input: InvoiceInput){
 
 export function create_invoice(input: InvoiceInput): string {
 
-    let amount:number = 0;
-    for (let i: number = 0; i < input.lineItems.length; i++) {
-        amount += input.lineItems[i].quantity * input.lineItems[i].rate;
-    }
+  const toolkit = new PeppolToolkit();
 
-    let Tax:number = input.tax.taxPercentage/100 * amount;
-    var convert = require('xml-js');
+  const subtotal = input.lineItems.reduce(
+    (sum, item) => sum + item.quantity * item.rate,
+    0
+  );
 
-    const Totalamount:number = amount + Tax;
-    const invoiceNumber = `INV-${Date.now()}`;
-    const invoiceData = {
+  const taxAmount = subtotal * (input.tax.taxPercentage / 100);
 
-        ID: invoiceNumber,
-        issueDate: Date.now(),
-        DueDate: input.from.dueDate,
-        invoiceTypeCode: 380,
+  const total = subtotal + taxAmount;
 
-        Currency: input.currency,
-        paymentTermsNote:input.paymentTermsNote,
-        exchangeRate: input.exchangeRate,
+  const invoiceData = {
+    ID: `INV-${Date.now()}`,
 
-        seller : {
-            name: input.from.businessName,
-            taxId: input.from.taxId,
-            abn: input.from.abnNumber,
+    issueDate: new Date().toISOString().split("T")[0],
 
-            address: {
-            street: input.from.address.street,
-            city: input.from.address.city,
-            postcode: input.from.address.postcode,
-            country: input.from.address.country
-            }
+    dueDate: input.from.dueDate?.toISOString().split("T")[0],
 
+    invoiceTypeCode: 380,
+
+    documentCurrencyCode: input.currency,
+
+    buyerReference: "PO-001",
+
+    seller: {
+      endPoint: { scheme: "ABN", id: String(input.from.abnNumber) },
+
+      legalEntity: {
+        registrationName: input.from.businessName,
+        companyId: input.from.taxId,
+      },
+
+      name: input.from.businessName,
+
+      address: {
+        streetName: input.from.address.street,
+        cityName: input.from.address.city,
+        postalZone: input.from.address.postcode,
+        country: input.from.address.country,
+      },
+
+      taxSchemeCompanyID: input.from.taxId,
+
+      identification: [{ id: input.from.taxId }],
+    },
+
+    buyer: {
+      endPoint: { scheme: "EMAIL", id: input.customer.email },
+
+      legalEntity: {
+        registrationName: input.customer.fullName,
+        companyId: input.customer.fullName,
+      },
+
+      name: input.customer.fullName,
+
+      address: {
+        streetName: input.customer.billingAddress.street,
+        cityName: input.customer.billingAddress.city,
+        postalZone: input.customer.billingAddress.postcode,
+        country: input.customer.billingAddress.country,
+      },
+
+      taxSchemeCompanyID: "N/A",
+
+      identification: [{ id: input.customer.fullName }],
+    },
+
+    paymentMeans: [
+      {
+        code: "30",
+        paymentId: `INV-${Date.now()}`,
+        name: "Bank Transfer",
+        financialAccount: {
+          id: "UNKNOWN",
+          name: input.from.businessName,
+          financialInstitutionBranch: "UNKNOWN",
         },
+      },
+    ],
 
-        buyer:{
-            name: input.customer.fullName,
-            email: input.customer.email,
-            phone: input.customer.phone,
+    paymentTermsNote: "Payment due within 30 days",
 
-            billing_address: {
-            street: input.customer.billingAddress?.street,
-            city: input.customer.billingAddress?.city,
-            postcode: input.customer.billingAddress?.postcode,
-            country: input.customer.billingAddress?.country
+    taxTotal: [
+      {
+        taxAmountCurrency: input.currency,
+        taxAmount: taxAmount,
+        subTotals: [
+          {
+            taxableAmount: subtotal,
+            taxAmount: taxAmount,
+            taxCategory: {
+              categoryCode: "S",
+              percent: input.tax.taxPercentage,
             },
-            shipping_address: {
-                street: input.customer.shippingAddress.street,
-                city: input.customer.shippingAddress.city,
-                postcode: input.customer.shippingAddress.postcode,
-                country: input.customer.shippingAddress.country
-            }
-        },
+          },
+        ],
+      },
+    ],
 
-        tax:[{
-            taxAmount: Tax,
-            countryCode: input.tax.countryCode,
-            taxPercentage: input.tax.taxPercentage
-        }],
+    legalMonetaryTotal: {
+      currency: input.currency,
+      lineExtensionAmount: subtotal,
+      taxExclusiveAmount: subtotal,
+      taxInclusiveAmount: total,
+      prepaidAmount: 0,
+      payableAmount: total,
+    },
 
-        legalMonetaryTotal : {
-            lineExtensionAmount: amount,
-            taxExclusiveAmount: amount,
-            taxInclusiveAmount: Totalamount,
-            payableAmount: Totalamount 
-        },
+    invoiceLines: input.lineItems.map((item, index) => ({
+      id: String(index + 1),
+      invoicedQuantity: item.quantity,
+      unitCode: "EA",
+      lineExtensionAmount: item.quantity * item.rate,
+      price: item.rate,
+      name: item.description,
+      currency: input.currency,
+      taxCategory: {
+        categoryCode: "S",
+        percent: input.tax.taxPercentage,
+      },
+    })),
+  };
 
-        invoiceLine: input.lineItems.map((item, index) => ({
-            ID: index + 1,
-            description: item.description,          
-            quantity: item.quantity,
-            unitPrice: item.rate,
-            lineExtensionAmount: item.quantity * item.rate
-        }))
-
-    };
-    var options = {compact: true, ignoreComment: true, spaces: 4};
-
-    const result = convert.json2xml(invoiceData,options);
-    return result;
-    
+  return toolkit.invoiceToPeppolUBL(invoiceData as any);
 }
 
 
-export function generateInvoice(xml: string): generatorResult{
+export async function generateInvoice(xml: string, token: string|undefined): Promise<generatorResult> {
+    if (!token) {
+      throw new HttpError('Not logged in.', 401);
+    }
+  
     const input = parseOrderXML(xml);
     try{
         validateInvoiceInput(input);
@@ -223,14 +274,32 @@ export function generateInvoice(xml: string): generatorResult{
 
     const invoiceXML:string = create_invoice(input);
     const invoiceNumber = `INV-${Date.now()}`;
-    const dirPath = './invoices';
-    const filePath = path.join(dirPath, `${invoiceNumber}.xml`);
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true }); 
-    }
-    fs.writeFileSync(filePath, invoiceXML);
+    const invoiceId = uuidv4();
+    const userResult = await pool.query(
+      `SELECT userId FROM users WHERE token = $1`,
+      [token]
+    );
+
+    const userId = userResult.rows[0].userId;
+    console.log("User ID from token:", userId);
+    const result = await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [invoiceId, userId, invoiceXML, 'generated']
+    );
+
+
+    
+    // const invoiceResult = await pool.query(
+    //   'SELECT * FROM invoices WHERE "userId" = $2 ORDER BY "createdAt" DESC LIMIT 1',
+    //   [userId]
+    // );
+    
+    
+
     return {
-        input: filePath,
+        output:invoiceXML ,
         message: "Invoice generated successfully.",
         code: 200
     };
