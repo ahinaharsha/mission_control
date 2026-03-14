@@ -7,7 +7,7 @@ import https from 'https';
 import { URL } from 'url';
 import pool from '../AWS/datastore';
 
-import { authLogin, authRegister } from '../AWS/auth';
+import { authLogin, authRegister } from '../AWS/auth/auth';
 
 async function request(method: string, url: string, options?: { json?: any; node?: any; headers?: Record<string, string> }) {
   const parsed = new URL(url);
