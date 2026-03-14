@@ -48,6 +48,17 @@ describe('POST /auth/register', () => {
     expect(body).toStrictEqual({ error: expect.any(String) });
     expect(result.statusCode).toStrictEqual(400);
   });
+  test('Registered user is stored in database', async () => {
+    request('POST', `${SERVER_URL}/auth/register`, {
+      json: { email: 'test@gmail.com', password: 'correctpassword123' }
+    });
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      ['test@gmail.com']
+    );
+    expect(result.rows.length).toStrictEqual(1);
+    expect(result.rows[0].email).toStrictEqual('test@gmail.com');
+  });
 });
 
 describe('POST /auth/login', () => {
