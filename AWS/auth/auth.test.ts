@@ -1,5 +1,7 @@
 import request from 'sync-request-curl';
 import pool from '../datastore'
+import { HttpError } from '../../class';
+import { authRegister, authLogin, authLogout, authenticate } from './auth';
 const SERVER_URL = 'http://localhost:3000';
 
 beforeEach(async () => {
@@ -59,6 +61,14 @@ describe('POST /auth/register', () => {
     expect(result.rows.length).toStrictEqual(1);
     expect(result.rows[0].email).toStrictEqual('test@gmail.com');
   });
+
+  test('missing email throws HttpError', async () => {
+    expect(authRegister('', 'password123')).rejects.toThrow(HttpError);
+  });
+
+  test('missing password throws HttpError', async () => {
+    expect(authRegister('test@gmail.com', '')).rejects.toThrow(HttpError);
+  });
 });
 
 describe('POST /auth/login', () => {
@@ -103,6 +113,14 @@ describe('POST /auth/login', () => {
     expect(body).toStrictEqual({ error: expect.any(String) });
     expect(result.statusCode).toStrictEqual(400);
   });
+
+  test('missing email throws HttpError', async () => {
+    expect(authLogin('', 'password123')).rejects.toThrow(HttpError);
+  });
+
+  test('missing password throws HttpError', async () => {
+    expect(authLogin('test@gmail.com', '')).rejects.toThrow(HttpError);
+  });
 });
 
 describe('POST /auth/logout', () => {
@@ -125,5 +143,19 @@ describe('POST /auth/logout', () => {
     const body = JSON.parse(result.body.toString());
     expect(body).toStrictEqual({ error: expect.any(String) });
     expect(result.statusCode).toStrictEqual(401);
+  });
+
+  test('missing token throws HttpError', async () => {
+    expect(authLogout(undefined)).rejects.toThrow(HttpError);
+  });
+});
+
+describe('authenticate function', () => {
+  test('No token throws 401', () => {
+    expect(() => authenticate(undefined)).toThrow(HttpError);
+  });
+
+  test('Invalid token throws 401', () => {
+    expect(() => authenticate('invalidtoken123')).toThrow(HttpError);
   });
 });
