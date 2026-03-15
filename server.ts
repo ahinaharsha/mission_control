@@ -1,15 +1,16 @@
 import express, { json, Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
-import YAML from 'yaml';
 import sui from 'swagger-ui-express';
+import YAML from 'yaml';
 import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import { authRegister, authLogin, authLogout, authenticate } from './AWS/auth/auth';
+import jwt from 'jsonwebtoken';
 import { HttpError } from './class';
 import { generateInvoice } from './invoice-generator/generator';
-
+import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 
 // Set up web app
 const app = express();
@@ -113,7 +114,22 @@ app.post("/invoices", async (req: Request, res: Response) => {
   }
 });
 
-
+app.get('/invoices', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    authenticate(token);
+    
+    const decoded = jwt.decode(token as string) as { userId: string };
+    const invoices = await retrieveInvoices(decoded.userId);
+    
+    return res.status(200).json(invoices);
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 // Start server
