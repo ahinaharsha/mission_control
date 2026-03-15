@@ -9,7 +9,7 @@ import process from 'process';
 import { authRegister, authLogin, authLogout, authenticate } from './AWS/auth/auth';
 import { HttpError } from './class';
 import { generateInvoice } from './invoice-generator/generator';
-
+import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 
 // Set up web app
 const app = express();
@@ -108,7 +108,21 @@ app.post("/invoices", async (req: Request, res: Response) => {
   }
 });
 
+app.get('/invoices', authenticate, async (req: any, res: Response) => {
+  try {
+    const invoices = await retrieveInvoices(req.user.userId);
 
+    return res.status(200).json(invoices);
+
+  } catch (error) {
+
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 // Start server
