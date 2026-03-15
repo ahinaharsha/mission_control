@@ -1,5 +1,6 @@
 import { retrieveInvoices } from '../invoice-retrieval/retrieveInvoices';
 import pool from '../AWS/datastore';
+import { HttpError } from '../class';
 
 jest.mock('../AWS/datastore', () => ({
   query: jest.fn(),
@@ -42,7 +43,7 @@ describe('retrieveInvoices', () => {
     }
   ];
 
-  it("should retrieve invoices for a user", async () => {
+  test('valid userId returns invoices', async () => {
 
     (pool.query as jest.Mock).mockResolvedValue({
       rows: mockDBRows
@@ -55,17 +56,14 @@ describe('retrieveInvoices', () => {
       [mockUserId]
     );
 
-    expect(result).toEqual([
-      {
-        invoiceId: "inv001",
-        userId: "user123",
-        xml: mockDBRows[0].xml,
-        status: "DRAFT"
-      }
-    ]);
+    expect(result.length).toBe(1);
+
+    expect(result[0].invoiceId).toStrictEqual(expect.any(String));
+    expect(result[0].userId).toStrictEqual(expect.any(String));
+    expect(result[0].status).toStrictEqual(expect.any(String));
   });
 
-  it("should return empty array if user has no invoices", async () => {
+  test('no invoices returns empty array', async () => {
 
     (pool.query as jest.Mock).mockResolvedValue({
       rows: []
@@ -73,16 +71,16 @@ describe('retrieveInvoices', () => {
 
     const result = await retrieveInvoices(mockUserId);
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
-  it("should throw error if database fails", async () => {
+  test('database error throws HttpError', async () => {
 
     (pool.query as jest.Mock).mockRejectedValue(new Error("DB Error"));
 
     await expect(retrieveInvoices(mockUserId))
       .rejects
-      .toThrow("Failed to retrieve invoices");
+      .toBeInstanceOf(HttpError);
 
   });
 

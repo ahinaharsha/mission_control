@@ -1,5 +1,6 @@
 import pool from '../AWS/datastore';
 import { invoiceoutput } from '../interface';
+import { HttpError } from '../class';
 
 export async function retrieveInvoices(userId: string): Promise<invoiceoutput[]> {
   try {
@@ -15,6 +16,7 @@ export async function retrieveInvoices(userId: string): Promise<invoiceoutput[]>
       status: row.status
     }));
   } catch (error) {
-    throw new Error('Failed to retrieve invoices');
+    console.error('Error retrieving invoices:', error);
+    throw new HttpError('Failed to retrieve invoices', 500);
   }
 }
