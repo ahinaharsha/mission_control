@@ -21,7 +21,7 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // Swagger docs
-const file = fs.readFileSync(path.join(process.cwd(), 'swagger.yaml'), 'utf8');
+const file = fs.readFileSync(path.join(__dirname, 'swagger.yaml'), 'utf8');
 app.get('/', (req: Request, res: Response) => res.redirect('/docs'));
 app.use('/docs', sui.serve, sui.setup(YAML.parse(file)));
 
