@@ -78,13 +78,17 @@ app.post("/invoices", async (req: Request, res: Response) => {
   try {
     const xml = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
-    if (!xml || xml === '{}') {
+    if (!xml || xml.trim() === '' || xml === '{}' || !xml.trim().startsWith('<')) {
+      return res.status(400).json({ error: "Invalid XML format." });
+    } 
+
+    if (!xml || xml.trim() === '' || xml === '{}') {
       return res.status(400).json({
         error: "Missing XML order document"
       });
     }
 
-    const result = await generateInvoice(xml,req.header('token'));
+    const result = await generateInvoice(xml, req.header('token'));
 
     if (result.code !== 200) {
       return res.status(result.code).json({
@@ -98,13 +102,14 @@ app.post("/invoices", async (req: Request, res: Response) => {
     });
 
   } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
 
     console.error(error);
-
     return res.status(500).json({
       error: "Internal server error"
     });
-
   }
 });
 

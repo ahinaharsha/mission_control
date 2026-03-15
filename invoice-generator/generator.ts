@@ -8,7 +8,7 @@ import { PeppolToolkit } from "@pixeldrive/peppol-toolkit"
 import { v4 as uuidv4 } from 'uuid';
 import pool from "../AWS/datastore";
 
-
+// Function to parse the input XML and extract necessary details for invoice generation
 export function parseOrderXML(xml: string): InvoiceInput {
 
   const parsed = xml2js(xml, { compact: true }) as any;
@@ -93,6 +93,8 @@ export function parseOrderXML(xml: string): InvoiceInput {
 
   return invoiceInput;
 }
+
+// Function to validate the extracted input data
 export function validateInvoiceInput(input: InvoiceInput){
     const customerErrors = validateCustomer(input.customer);
 
@@ -124,7 +126,7 @@ export function validateInvoiceInput(input: InvoiceInput){
 } 
     
 
-
+// Function to generate the invoice XML using the PeppolToolkit
 export function create_invoice(input: InvoiceInput): string {
 
   const toolkit = new PeppolToolkit();
@@ -254,23 +256,24 @@ export function create_invoice(input: InvoiceInput): string {
   return toolkit.invoiceToPeppolUBL(invoiceData as any);
 }
 
-
+// Main function to handle the entire invoice generation process
 export async function generateInvoice(xml: string, token: string|undefined): Promise<generatorResult> {
     if (!token) {
       throw new HttpError('Not logged in.', 401);
     }
-  
-    const input = parseOrderXML(xml);
-    try{
-        validateInvoiceInput(input);
-    }
-    catch(error:any){
-        return {
-            message: error.message,
-            code: error.statusCode || 500
-        };
+
+    if (!xml || xml.trim() === '' || xml === '{}' || !xml.trim().startsWith('<')) {
+      throw new HttpError('Invalid XML format.', 400);
     }
 
+    let input: InvoiceInput;
+    try {
+      input = parseOrderXML(xml);
+    } catch (e: any) {
+      throw new HttpError('Invalid XML format.', 400);
+    }
+
+    validateInvoiceInput(input); 
 
     const invoiceXML:string = create_invoice(input);
     const invoiceNumber = `INV-${Date.now()}`;
@@ -280,21 +283,19 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
       [token]
     );
 
-    const userId = userResult.rows[0].userId;
+    if (userResult.rows.length === 0) {
+      throw new HttpError('Invalid or expired token.', 401);
+    }
+
+    const userId = userResult.rows[0].userid;
     console.log("User ID from token:", userId);
     const result = await pool.query(
-    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`,
-    [invoiceId, userId, invoiceXML, 'generated']
+      `INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [invoiceId, userId, invoiceXML, 'generated']
     );
 
-
-    
-    // const invoiceResult = await pool.query(
-    //   'SELECT * FROM invoices WHERE "userId" = $2 ORDER BY "createdAt" DESC LIMIT 1',
-    //   [userId]
-    // );
     
     
 
