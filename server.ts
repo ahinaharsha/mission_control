@@ -2,7 +2,8 @@ import express, { json, Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import sui from 'swagger-ui-express';
-import swaggerDocument from './swagger.json';
+import YAML from 'yaml';
+import fs from 'fs';
 import path from 'path';
 import process from 'process';
 import { authRegister, authLogin, authLogout, authenticate } from './AWS/auth/auth';
@@ -20,8 +21,9 @@ app.use(cors());
 app.use(morgan('dev'));
 
 // Swagger docs
-app.use('/docs', sui.serve, sui.setup(swaggerDocument));
+const file = fs.readFileSync(path.join(process.cwd(), 'swagger.yaml'), 'utf8');
 app.get('/', (req: Request, res: Response) => res.redirect('/docs'));
+app.use('/docs', sui.serve, sui.setup(YAML.parse(file)));
 
 const PORT: number = parseInt(process.env.PORT || '3000');
 const HOST: string = process.env.IP || '127.0.0.1';
