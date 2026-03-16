@@ -7,11 +7,11 @@ const SERVER_URL = 'http://localhost:3000';
 beforeEach(async () => {
   await pool.query('DELETE FROM invoices');
   await pool.query('DELETE FROM users');
-});
+}, 30000);
 
 afterAll(async () => {
   await pool.end();
-});
+}, 30000);
 
 describe('POST /auth/register', () => {
   test('Successful registration', () => {
