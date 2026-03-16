@@ -71,6 +71,13 @@ describe('POST /auth/register', () => {
   });
 });
 
+describe('authRegister direct', () => {
+  test('Email already in use throws HttpError', async () => {
+    await authRegister('direct@gmail.com', 'password123');
+    await expect(authRegister('direct@gmail.com', 'password123')).rejects.toBeInstanceOf(HttpError);
+  });
+});
+
 describe('POST /auth/login', () => {
   test('Correct login info', () => {
     request('POST', `${SERVER_URL}/auth/register`, {
@@ -123,6 +130,17 @@ describe('POST /auth/login', () => {
   });
 });
 
+describe('authLogin direct', () => {
+  test('Wrong password throws HttpError', async () => {
+    await authRegister('direct2@gmail.com', 'password123');
+    await expect(authLogin('direct2@gmail.com', 'wrongpassword')).rejects.toBeInstanceOf(HttpError);
+  });
+
+  test('Email does not exist throws HttpError', async () => {
+    await expect(authLogin('nonexistent@gmail.com', 'password123')).rejects.toBeInstanceOf(HttpError);
+  });
+});
+
 describe('POST /auth/logout', () => {
   test('Successful logout', () => {
     request('POST', `${SERVER_URL}/auth/register`, {
@@ -157,5 +175,11 @@ describe('authenticate function', () => {
 
   test('Invalid token throws 401', () => {
     expect(() => authenticate('invalidtoken123')).toThrow(HttpError);
+  });
+
+  test('Successful logout direct', async () => {
+    await authRegister('logout@gmail.com', 'password123');
+    const { token } = await authLogin('logout@gmail.com', 'password123');
+    await expect(authLogout(token)).resolves.toBeUndefined();
   });
 });
