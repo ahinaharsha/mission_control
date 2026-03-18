@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: Invoice API
   version: 1.0.0
-  description: API for creating, managing, and tracking invoices
+  description: API for creating, managing, and tracking invoices. Make sure you select the vercel server link (Production server) so that you can actually use it.
 
 servers:
   - url: https://mission-control-amber.vercel.app
