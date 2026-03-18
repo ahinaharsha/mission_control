@@ -4,6 +4,10 @@ info:
   version: 1.0.0
   description: API for creating, managing, and tracking invoices
 
+servers:
+  - url: https://mission-control-amber.vercel.app
+    description: Production server
+
 paths:
 
   /auth/register:
