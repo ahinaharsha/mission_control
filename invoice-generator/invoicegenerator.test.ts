@@ -316,6 +316,7 @@ const invalidinvoiceinput = {
     const body = JSON.parse(res.body.toString());
     expect(body.message).toBe("Invoice generated successfully.");
     expect(body.filePath).toBeDefined();
+	expect(body.invoiceId).toBeDefined();
   });
  
 	test("should return 400 for invalid XML", async () => {

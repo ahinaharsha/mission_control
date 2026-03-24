@@ -302,7 +302,8 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
     return {
         output:invoiceXML ,
         message: "Invoice generated successfully.",
-        code: 200
+        code: 200,
+        invoiceId: invoiceId
     };
 }
 

@@ -101,6 +101,7 @@ app.post("/invoices", async (req: Request, res: Response) => {
 
     return res.status(201).json({
       message: result.message,
+      invoiceId: result.invoiceId,
       filePath: result.output
     });
 
