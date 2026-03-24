@@ -175,4 +175,5 @@ process.on('SIGINT', () => {
   });
 });
 
-export { app, server };
+export { app };
+export default app;

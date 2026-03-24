@@ -1,6 +1,6 @@
 import { describe, expect, test, afterAll, beforeAll } from '@jest/globals';
 import request from 'supertest';
-import { app, server } from '../server';
+import { app } from '../server';
 import pool from '../AWS/datastore';
 import { authLogin, authRegister } from '../AWS/auth/auth';
 
@@ -74,7 +74,6 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  server.close();
   await pool.end();
 }, 30000);
 
