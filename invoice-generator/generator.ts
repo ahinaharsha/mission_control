@@ -293,7 +293,7 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
       `INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [invoiceId, userId, invoiceXML, 'generated']
+      [invoiceId, userId, invoiceXML, 'Generated']
     );
 
     
