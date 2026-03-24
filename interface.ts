@@ -70,9 +70,10 @@ export interface ValidationError {
 }
 
 export interface generatorResult{
-  output ?:string;
-  message:string;
-  code:number;
+  output?: string;
+  message: string;
+  code: number;
+  invoiceId?: string;
 }
 
 export interface invoiceoutput{
