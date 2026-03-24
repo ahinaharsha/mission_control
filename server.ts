@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import { HttpError } from './class';
 import { generateInvoice } from './invoice-generator/generator';
 import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
+import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 
 // Set up web app
 const app = express();
@@ -128,6 +129,22 @@ app.get('/invoices', async (req: Request, res: Response) => {
       return res.status(error.statusCode).json({ error: error.message });
     }
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token')
+    const invoiceId = req.params.id as string;
+    const pdfBuffer = await getInvoicePDF(invoiceId, token);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="invoice-${req.params.id}.pdf"`);
+    res.status(200).send(pdfBuffer);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    return res.status(500).json({ error: 'Internal server error.' });
   }
 });
 
