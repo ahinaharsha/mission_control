@@ -2,6 +2,8 @@ import PDFDocument from 'pdfkit';
 import { xml2js } from 'xml-js';
 import pool from '../AWS/datastore';
 import { HttpError } from '../class';
+import { authenticate } from '../AWS/auth/auth';
+import jwt from 'jsonwebtoken';
 
 function getText(node: any): string {
   if (!node) {
@@ -20,19 +22,10 @@ function safeGet(obj: any, ...keys: string[]): any {
 }
 
 export async function getInvoicePDF(invoiceId: string, token: string | undefined): Promise<Buffer> {
-  if (!token) {
-    throw new HttpError('Not logged in.', 401);
-  }
+  authenticate(token);
 
-  const userResult = await pool.query(
-    `SELECT userId FROM users WHERE token = $1`,
-    [token]
-  );
-
-  if (userResult.rows.length === 0) {
-    throw new HttpError('Invalid or expired token.', 401);
-  }
-  const userId = userResult.rows[0].userid;
+  const decoded = jwt.decode(token as string) as { userId: string };
+  const userId = decoded.userId;
 
   const invoiceResult = await pool.query(
     `SELECT invoiceId, userId, invoiceXML, status FROM invoices WHERE invoiceId = $1`,
@@ -109,7 +102,7 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
     const totalsValueWidth = pageWidth * 0.4;
     const totalsHalfWidth = totalsValueWidth * 0.5;
 
-    //Header
+    // ── Header ──────────────────────────────────────────────
     doc.fontSize(22).font('Helvetica-Bold').text('INVOICE', margin, 50);
     doc.fontSize(10).font('Helvetica')
       .text(`Invoice #: ${invoiceId2}`, { align: 'right' })
@@ -119,7 +112,7 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
 
     doc.moveDown(2);
 
-    // From / To
+    // ── From / To ────────────────────────────────────────────
     const colY = doc.y;
 
     doc.font('Helvetica-Bold').fontSize(10).text('FROM', margin, colY);
@@ -141,11 +134,11 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
 
     doc.y = Math.max(fromBottomY, doc.y) + 20;
 
-    // Divider 
+    // ── Divider ──────────────────────────────────────────────
     doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(1);
 
-    // Line Items Table Header 
+    // ── Line Items Table Header ──────────────────────────────
     const tableTop = doc.y;
     const descWidth = pageWidth * 0.45;
     const qtyWidth = pageWidth * 0.12;
@@ -166,7 +159,7 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
     doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(0.5);
 
-    // Line Items 
+    // ── Line Items ───────────────────────────────────────────
     doc.font('Helvetica').fontSize(9);
     for (const item of lineItems) {
       const rowY = doc.y;
@@ -177,12 +170,12 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
       doc.moveDown(0.8);
     }
 
-    // Divider
+    // ── Divider ──────────────────────────────────────────────
     doc.moveDown(0.5);
     doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).strokeColor('#cccccc').stroke();
     doc.moveDown(1);
 
-    // Totals 
+    // ── Totals ───────────────────────────────────────────────
     doc.font('Helvetica').fontSize(9);
     doc.text('Subtotal:', totalsLabelX, doc.y, { width: totalsHalfWidth });
     doc.text(`${currency} ${Number(subtotal).toFixed(2)}`, totalsLabelX + totalsHalfWidth, doc.y - doc.currentLineHeight(), { width: totalsHalfWidth, align: 'right' });
@@ -196,7 +189,7 @@ export async function getInvoicePDF(invoiceId: string, token: string | undefined
     doc.text('Total:', totalsLabelX, doc.y, { width: totalsHalfWidth });
     doc.text(`${currency} ${Number(total).toFixed(2)}`, totalsLabelX + totalsHalfWidth, doc.y - doc.currentLineHeight(), { width: totalsHalfWidth, align: 'right' });
 
-    // Footer
+    // ── Footer ───────────────────────────────────────────────
     doc.moveDown(3);
     doc.font('Helvetica').fontSize(8).fillColor('#888888')
       .text('Payment due within 30 days. Thank you for your business.', { align: 'center' });
