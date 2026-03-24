@@ -12,6 +12,7 @@ import { HttpError } from './class';
 import { generateInvoice } from './invoice-generator/generator';
 import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
+import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
 
 // Set up web app
 const app = express();
@@ -115,15 +116,13 @@ app.post("/invoices", async (req: Request, res: Response) => {
   }
 });
 
-app.get('/invoices', async (req: Request, res: Response) => {
+app.get('/invoices/:id', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     authenticate(token);
-    
-    const decoded = jwt.decode(token as string) as { userId: string };
-    const invoices = await retrieveInvoices(decoded.userId);
-    
-    return res.status(200).json(invoices);
+    const invoiceId = req.params.id as string;
+    const invoice = await retrieveInvoices(invoiceId);
+    return res.status(200).json(invoice);
   } catch (error) {
     if (error instanceof HttpError) {
       return res.status(error.statusCode).json({ error: error.message });
@@ -132,9 +131,23 @@ app.get('/invoices', async (req: Request, res: Response) => {
   }
 });
 
+app.delete('/invoices/:id', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const invoiceId = req.params.id as string;
+    const result = await deleteInvoice(invoiceId, token);
+    res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token')
+    const token = req.header('token');
     const invoiceId = req.params.id as string;
     const pdfBuffer = await getInvoicePDF(invoiceId, token);
     res.setHeader('Content-Type', 'application/pdf');
@@ -162,4 +175,4 @@ process.on('SIGINT', () => {
   });
 });
 
-
+export { app, server };
