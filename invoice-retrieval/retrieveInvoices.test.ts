@@ -8,80 +8,53 @@ jest.mock('../AWS/datastore', () => ({
 
 describe('retrieveInvoices', () => {
 
-  const mockUserId = "user123";
+  const mockInvoiceId = "inv001";
 
-  const mockDBRows = [
-    {
-      invoiceid: "inv001",
-      userid: "user123",
-      xml: {
-        id: "inv001",
-        customer: {
-          fullName: "John Doe",
-          email: "user@example.com",
-          phone: "0400000000",
-          billingAddress: {
-            street: "123 Street",
-            city: "Sydney",
-            postcode: "2000",
-            country: "Australia"
-          },
-          shippingAddress: {
-            street: "123 Street",
-            city: "Sydney",
-            postcode: "2000",
-            country: "Australia"
-          }
-        },
-        currency: "AUD",
-        subtotal: 100,
-        taxAmount: 10,
-        totalAmount: 110,
-        status: "DRAFT"
-      },
-      status: "DRAFT"
-    }
-  ];
+  const mockDBRow = {
+    invoiceid: "inv001",
+    userid: "user123",
+    xml: "<Invoice>...</Invoice>",
+    status: "Generated"
+  };
 
-  test('valid userId returns invoices', async () => {
-
+  test('valid invoiceId returns invoice', async () => {
     (pool.query as jest.Mock).mockResolvedValue({
-      rows: mockDBRows
+      rows: [mockDBRow]
     });
 
-    const result = await retrieveInvoices(mockUserId);
+    const result = await retrieveInvoices(mockInvoiceId);
 
     expect(pool.query).toHaveBeenCalledWith(
-      'SELECT invoiceId, userId, invoiceXML as xml, status FROM invoices WHERE userId = $1',
-      [mockUserId]
+      'SELECT invoiceId, userId, invoiceXML as xml, status FROM invoices WHERE invoiceId = $1',
+      [mockInvoiceId]
     );
 
-    expect(result.length).toBe(1);
-
-    expect(result[0].invoiceId).toStrictEqual(expect.any(String));
-    expect(result[0].userId).toStrictEqual(expect.any(String));
-    expect(result[0].status).toStrictEqual(expect.any(String));
+    expect(result.invoiceId).toStrictEqual(expect.any(String));
+    expect(result.userId).toStrictEqual(expect.any(String));
+    expect(result.status).toStrictEqual(expect.any(String));
   });
 
-  test('no invoices returns empty array', async () => {
-
+  test('invoice not found throws HttpError 404', async () => {
     (pool.query as jest.Mock).mockResolvedValue({
       rows: []
     });
 
-    const result = await retrieveInvoices(mockUserId);
-
-    expect(result).toStrictEqual([]);
+    try {
+      await retrieveInvoices(mockInvoiceId);
+    } catch (e) {
+      expect(e).toBeInstanceOf(HttpError);
+      expect((e as HttpError).statusCode).toStrictEqual(404);
+    }
   });
 
   test('database error throws HttpError', async () => {
-
     (pool.query as jest.Mock).mockRejectedValue(new Error("DB Error"));
 
-    await expect(retrieveInvoices(mockUserId))
-      .rejects
-      .toBeInstanceOf(HttpError);
-
+    try {
+      await retrieveInvoices(mockInvoiceId);
+    } catch (e) {
+      expect(e).toBeInstanceOf(HttpError);
+      expect((e as HttpError).statusCode).toStrictEqual(500);
+    }
   });
-
 });

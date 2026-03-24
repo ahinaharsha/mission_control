@@ -181,7 +181,7 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        '200':
           description: Invoice deleted successfully
         '401':
           description: Unauthorised
