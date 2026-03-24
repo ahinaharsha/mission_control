@@ -1,49 +1,8 @@
+import { describe, expect, test, afterAll, beforeAll } from '@jest/globals';
+import request from 'supertest';
+import { app, server } from '../server';
 import pool from '../AWS/datastore';
-import http from 'http';
-import https from 'https';
-import { URL } from 'url';
 import { authLogin, authRegister } from '../AWS/auth/auth';
-
-const SERVER_URL = 'http://localhost:3000';
-
-async function request(method: string, url: string, options?: { json?: any; headers?: Record<string, string> }) {
-  const parsed = new URL(url);
-  const lib = parsed.protocol === 'https:' ? https : http;
-  const body = options?.json !== undefined
-    ? typeof options.json === 'string'
-      ? options.json
-      : JSON.stringify(options.json)
-    : undefined;
-
-  const headers = {
-    ...(options?.headers ?? {}),
-    ...(body
-      ? {
-          'Content-Type': typeof options?.json === 'string' ? 'application/xml' : 'application/json',
-          'Content-Length': Buffer.byteLength(body).toString(),
-        }
-      : {}),
-  };
-
-  const reqOptions = {
-    method,
-    hostname: parsed.hostname,
-    port: parsed.port,
-    path: parsed.pathname + parsed.search,
-    headers,
-  };
-
-  return new Promise<{ statusCode: number; body: Buffer; headers: any }>((resolve, reject) => {
-    const req = lib.request(reqOptions, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body: Buffer.concat(chunks), headers: res.headers }));
-    });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
-  });
-}
 
 const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
@@ -102,53 +61,77 @@ beforeAll(async () => {
   const loginRes = await authLogin(testEmail, 'correctpassword123');
   token = loginRes.token;
 
-  await request('POST', `${SERVER_URL}/invoices`, {
-    headers: { token },
-    json: validxml
-  });
+  await request(app)
+    .post('/invoices')
+    .set('token', token)
+    .set('Content-Type', 'application/xml')
+    .send(validxml);
 
   const result = await pool.query(
     `SELECT invoiceId FROM invoices ORDER BY invoiceId DESC LIMIT 1`
   );
   invoiceId = result.rows[0].invoiceid;
-});
+}, 30000);
 
 afterAll(async () => {
+  server.close();
   await pool.end();
 }, 30000);
 
 describe('GET /invoices/:id/pdf', () => {
+  test('Returns PDF even with missing XML fields', async () => {
+  const incompleteXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`;
+  await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('11111111-1111-1111-1111-111111111111', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+    [token, incompleteXML]
+  );
+  const res = await request(app)
+    .get(`/invoices/11111111-1111-1111-1111-111111111111/pdf`)
+    .set('token', token);
+  expect(res.statusCode).toStrictEqual(200);
+});
+
+test('Returns PDF with empty XML tags', async () => {
+  const emptyTagsXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:ID></cbc:ID></Invoice>`;
+  await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('22222222-2222-2222-2222-222222222222', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+    [token, emptyTagsXML]
+  );
+  const res = await request(app)
+    .get(`/invoices/22222222-2222-2222-2222-222222222222/pdf`)
+    .set('token', token);
+  expect(res.statusCode).toStrictEqual(200);
+});
+
   test('Returns 200 and a PDF for a valid invoice', async () => {
-    const res = await request('GET', `${SERVER_URL}/invoices/${invoiceId}/pdf`, {
-      headers: { token }
-    });
+    const res = await request(app)
+      .get(`/invoices/${invoiceId}/pdf`)
+      .set('token', token);
     expect(res.statusCode).toStrictEqual(200);
     expect(res.headers['content-type']).toContain('application/pdf');
-    expect(res.body.subarray(0, 4).toString()).toStrictEqual('%PDF');
+    expect(Buffer.from(res.body).subarray(0, 4).toString()).toStrictEqual('%PDF');
   });
 
   test('No token returns 401', async () => {
-    const res = await request('GET', `${SERVER_URL}/invoices/${invoiceId}/pdf`, {});
-    const body = JSON.parse(res.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
+    const res = await request(app)
+      .get(`/invoices/${invoiceId}/pdf`);
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
 
   test('Invalid token returns 401', async () => {
-    const res = await request('GET', `${SERVER_URL}/invoices/${invoiceId}/pdf`, {
-      headers: { token: 'invalidtoken' }
-    });
-    const body = JSON.parse(res.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
+    const res = await request(app)
+      .get(`/invoices/${invoiceId}/pdf`)
+      .set('token', 'invalidtoken');
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
 
   test('Invoice not found returns 404', async () => {
-    const res = await request('GET', `${SERVER_URL}/invoices/00000000-0000-0000-0000-000000000000/pdf`, {
-      headers: { token }
-    });
-    const body = JSON.parse(res.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
+    const res = await request(app)
+      .get(`/invoices/00000000-0000-0000-0000-000000000000/pdf`)
+      .set('token', token);
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
   });
 
@@ -156,11 +139,10 @@ describe('GET /invoices/:id/pdf', () => {
     const otherEmail = `other-${Date.now()}@gmail.com`;
     await authRegister(otherEmail, 'correctpassword123');
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
-    const res = await request('GET', `${SERVER_URL}/invoices/${invoiceId}/pdf`, {
-      headers: { token: otherLogin.token }
-    });
-    const body = JSON.parse(res.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
+    const res = await request(app)
+      .get(`/invoices/${invoiceId}/pdf`)
+      .set('token', otherLogin.token);
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
   });
 });
