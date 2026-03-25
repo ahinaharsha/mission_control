@@ -1,24 +1,17 @@
 import pool from '../AWS/datastore';
 import { HttpError } from '../class';
 import { InvoiceStatus } from '../interface';
+import { authenticate } from '../AWS/auth/auth';
+import jwt from 'jsonwebtoken';
 
 const ALLOWED_STATUSES: InvoiceStatus[] = ['Generated', 'InProgress'];
 
 export async function deleteInvoice(invoiceId: string, token: string | undefined): Promise<{ message: string }> {
-  if (!token) {
-    throw new HttpError('Not logged in.', 401);
-  }
+  authenticate(token);
 
-  const userResult = await pool.query(
-    `SELECT userId FROM users WHERE token = $1`,
-    [token]
-  );
+  const decoded = jwt.decode(token as string) as { userId: string };
+  const userId = decoded.userId;
 
-  if (userResult.rows.length === 0) {
-    throw new HttpError('Invalid or expired token.', 401);
-  }
-
-  const userId = userResult.rows[0].userid;
   const invoiceResult = await pool.query(
     `SELECT * FROM invoices WHERE invoiceId = $1`,
     [invoiceId]
@@ -42,5 +35,6 @@ export async function deleteInvoice(invoiceId: string, token: string | undefined
     `DELETE FROM invoices WHERE invoiceId = $1`,
     [invoiceId]
   );
+
   return { message: 'Invoice deleted successfully.' };
 }
