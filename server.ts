@@ -15,6 +15,7 @@ import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
 import { getStatus } from './invoice-generator/TrackStatus';
+import { updateInvoice } from './invoice-update/updateInvoice';
 
 // Set up web app
 const app = express();
@@ -131,6 +132,21 @@ app.get('/invoices/:id', async (req: Request, res: Response) => {
       return res.status(error.statusCode).json({ error: error.message });
     }
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/invoices/:id', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const invoiceId = req.params.id as string;
+    const result = await updateInvoice(invoiceId, token, req.body);
+    res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
   }
 });
 
