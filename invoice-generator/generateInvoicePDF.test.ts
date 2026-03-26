@@ -111,6 +111,37 @@ test('Returns PDF with empty XML tags', async () => {
     expect(Buffer.from(res.body).subarray(0, 4).toString()).toStrictEqual('%PDF');
   });
 
+  test('Returns PDF with multiple line items', async () => {
+  const multiLineXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="GBP">100.00</cbc:TaxAmount>
+    </cac:TaxTotal>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="GBP">50.00</cbc:TaxAmount>
+    </cac:TaxTotal>
+    <cac:InvoiceLine>
+      <cbc:InvoicedQuantity>1</cbc:InvoicedQuantity>
+      <cbc:LineExtensionAmount currencyID="GBP">100.00</cbc:LineExtensionAmount>
+      <cac:Item><cbc:Name>Item 1</cbc:Name></cac:Item>
+      <cac:Price><cbc:PriceAmount currencyID="GBP">100.00</cbc:PriceAmount></cac:Price>
+    </cac:InvoiceLine>
+    <cac:InvoiceLine>
+      <cbc:InvoicedQuantity>2</cbc:InvoicedQuantity>
+      <cbc:LineExtensionAmount currencyID="GBP">200.00</cbc:LineExtensionAmount>
+      <cac:Item><cbc:Name>Item 2</cbc:Name></cac:Item>
+      <cac:Price><cbc:PriceAmount currencyID="GBP">100.00</cbc:PriceAmount></cac:Price>
+    </cac:InvoiceLine>
+  </Invoice>`;
+  await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('33333333-3333-3333-3333-333333333333', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+    [token, multiLineXML]
+  );
+  const res = await request(app)
+    .get(`/invoices/33333333-3333-3333-3333-333333333333/pdf`)
+    .set('token', token);
+  expect(res.statusCode).toStrictEqual(200);
+});
+
   test('No token returns 401', async () => {
     const res = await request(app)
       .get(`/invoices/${invoiceId}/pdf`);
