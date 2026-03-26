@@ -9,10 +9,12 @@ import process from 'process';
 import { authRegister, authLogin, authLogout, authenticate } from './AWS/auth/auth';
 import jwt from 'jsonwebtoken';
 import { HttpError } from './class';
+import pool from './AWS/datastore';
 import { generateInvoice } from './invoice-generator/generator';
 import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
+import { getStatus } from './invoice-generator/TrackStatus';
 
 // Set up web app
 const app = express();
@@ -159,6 +161,62 @@ app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
       return res.status(e.statusCode).json({ error: e.message });
     }
     return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.get('/invoices/:id/status', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const invoiceId = req.params.id as string;
+    const status = await getStatus(invoiceId, token);
+    return res.status(200).json({ status });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/invoices/:id/status', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const invoiceId = req.params.id as string;
+    const { status } = req.body;
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Not logged in.' });
+    }
+    
+    const decoded = jwt.decode(token as string) as { userId: string };
+    const userId = decoded.userId;
+    
+    // Verify invoice exists and belongs to user
+    const invoiceResult = await pool.query(
+      `SELECT userId FROM invoices WHERE invoiceId = $1`,
+      [invoiceId]
+    );
+    
+    if (invoiceResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found.' });
+    }
+    
+    if (invoiceResult.rows[0].userid !== userId) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
+    
+    // Update status
+    await pool.query(
+      `UPDATE invoices SET status = $1 WHERE invoiceId = $2`,
+      [status, invoiceId]
+    );
+    
+    return res.status(200).json({ message: 'Status updated successfully.' });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
