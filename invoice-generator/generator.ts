@@ -289,12 +289,9 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
 
     const userId = userResult.rows[0].userid;
     console.log("User ID from token:", userId);
-    const result = await pool.query(
-      `INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [invoiceId, userId, invoiceXML, 'Generated']
-    );
+    const result = await pool.query(   `INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status)   VALUES ($1, $2, $3, $4, $5)   RETURNING *`,  
+       [invoiceId, userId, invoiceXML, JSON.stringify(input), 'Generated'] );
+ 
 
     
     

@@ -7,12 +7,4 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
-  collectCoverageFrom: [
-    '**/*.ts',
-    '!**/*.test.ts',
-    '!**/node_modules/**',
-    '!**/datastore.ts',
-    '!**/server.ts',
-    '!**/setupDB.ts',
-  ]
 };
