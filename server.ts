@@ -145,7 +145,6 @@ app.put('/invoices/:id', async (req: Request, res: Response) => {
     if (e instanceof HttpError) {
       return res.status(e.statusCode).json({ error: e.message });
     }
-    console.error(e);
     return res.status(500).json({ error: 'Internal server error.' });
   }
 });
