@@ -16,6 +16,7 @@ async function setupDb() {
         invoiceId UUID PRIMARY KEY,
         userId UUID REFERENCES users(userId),
         invoiceXML TEXT NOT NULL,
+        invoiceData JSONB,
         status VARCHAR(50) NOT NULL,
         createdAt TIMESTAMP DEFAULT NOW()
       );
