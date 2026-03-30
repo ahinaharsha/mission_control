@@ -87,7 +87,7 @@ export function parseOrderXML(xml: string): InvoiceInput {
           sellerParty["cac:PostalAddress"]["cac:Country"]["cbc:IdentificationCode"]?._text
       },
 
-      dueDate: new Date()
+      dueDate: order["cbc:DueDate"]?._text ? new Date(order["cbc:DueDate"]._text) : (order["cac:Delivery"]?.["cbc:StartDate"]?._text ? new Date(order["cac:Delivery"]["cbc:StartDate"]._text) : new Date())
     }
   };
 

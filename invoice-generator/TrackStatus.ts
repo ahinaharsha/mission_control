@@ -43,21 +43,24 @@ export async function getStatus(invoiceId: string, token: string | undefined){
   }
 
   const parsed = xml2js(invoice.invoicexml, { compact: true }) as any;
-  const inv = parsed['Invoice'] || parsed['ubl:Invoice'] || Object.values(parsed)[0] as any;
+  const inv = parsed.Invoice;
   
   // Extract due date from invoice XML
   const dueDateStr = getText(inv['cbc:DueDate']);
   let currentStatus = invoice.status;
 
-
-  //if no due date is found, return the current status without checking for overdu
-
+  if (currentStatus === 'overdue') {
+    return currentStatus;
+  }
   // If invoice is not yet paid or deleted, check if it's overdue
-  if (currentStatus !== 'Paid' && currentStatus !== 'Deleted' && dueDateStr) {
-    const dueDate = new Date(dueDateStr);
-    const now = new Date();
+  if (currentStatus !== 'Paid'  && dueDateStr) {
+    const dueDateObj = new Date(dueDateStr);
     
-    // Compare only the date portions (not time) to avoid marking invoices as overdue on the same day
+    const dueDate = new Date(
+    dueDateObj.getFullYear(),
+    dueDateObj.getMonth(),
+    dueDateObj.getDate()
+  );
     const Year = new Date().getFullYear();
     const month = new Date().getMonth();
     const day = new Date().getDate();
@@ -65,10 +68,49 @@ export async function getStatus(invoiceId: string, token: string | undefined){
     
     if (dueDate < nowDateOnly) {
       currentStatus = 'Overdue';
-      // Optionally update the database status
-      // await pool.query(`UPDATE invoices SET status = 'Overdue' WHERE invoiceId = $1`, [invoiceId]);
+      await pool.query(
+        `UPDATE invoices SET status = $1 WHERE invoiceId = $2`,
+        [currentStatus, invoiceId]
+      );
     }
   }
 
-  return currentStatus;
+  return  currentStatus;
+}
+
+export async function updateStatus(invoiceId: string, status: string, token: string | undefined)
+ {
+    if (!token) {
+      throw new HttpError('Not logged in.', 401);
+    }
+    
+    const decoded = jwt.decode(token as string) as { userId: string };
+
+    // Verify status is valid
+    const validStatuses = ['Generated', 'InProgress', 'Sent', 'Paid', 'Overdue', 'Deleted'];
+    if (!validStatuses.includes(status)) {
+      throw new HttpError('Invalid status value.', 400);
+    }
+    const userId = decoded.userId;
+
+    
+    // Verify invoice exists and belongs to user
+    const invoiceResult = await pool.query(
+      `SELECT userid FROM invoices WHERE invoiceId = $1`,
+      [invoiceId]
+    );
+    
+    if (invoiceResult.rows.length === 0) {
+      throw new HttpError('Invoice not found.', 404);
+    }
+    
+    if (invoiceResult.rows[0].userid !== userId) {
+      throw new HttpError('Forbidden.', 403);
+    }
+    
+    // Update status
+    await pool.query(
+      `UPDATE invoices SET status = $1 WHERE invoiceId = $2`,
+      [status, invoiceId]
+    );
 }
