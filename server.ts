@@ -179,6 +179,7 @@ app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
   }
 });
 
+//getting invoice status
 app.get('/invoices/:id/status', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
@@ -193,38 +194,14 @@ app.get('/invoices/:id/status', async (req: Request, res: Response) => {
   }
 });
 
+//adding invoice status update route.
 app.put('/invoices/:id/status', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
-    const { status } = req.body;
+    const { status: newStatus } = req.body;
     
-    if (!token) {
-      return res.status(401).json({ error: 'Not logged in.' });
-    }
-    
-    const decoded = jwt.decode(token as string) as { userId: string };
-    const userId = decoded.userId;
-    
-    // Verify invoice exists and belongs to user
-    const invoiceResult = await pool.query(
-      `SELECT userId FROM invoices WHERE invoiceId = $1`,
-      [invoiceId]
-    );
-    
-    if (invoiceResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Invoice not found.' });
-    }
-    
-    if (invoiceResult.rows[0].userid !== userId) {
-      return res.status(403).json({ error: 'Forbidden.' });
-    }
-    
-    // Update status
-    await pool.query(
-      `UPDATE invoices SET status = $1 WHERE invoiceId = $2`,
-      [status, invoiceId]
-    );
+    await updateStatus(invoiceId, newStatus, token);
     
     return res.status(200).json({ message: 'Status updated successfully.' });
   } catch (error) {
@@ -233,6 +210,7 @@ app.put('/invoices/:id/status', async (req: Request, res: Response) => {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
+    
 });
 
 
