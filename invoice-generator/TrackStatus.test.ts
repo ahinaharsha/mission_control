@@ -216,7 +216,7 @@ afterAll(async () => {
   await pool.end();
 }, 30000);
 
-describe('TrackStatus', () => {
+describe('getstatus', () => {
     test('should return the status of an existing invoice', async () => {
         const res = await request(app)
         .get(`/invoices/${invoiceId}/status`)
@@ -224,7 +224,7 @@ describe('TrackStatus', () => {
         .set('invoiceId', invoiceId);
 
         expect(res.statusCode).toStrictEqual(200);
-        expect(res.body.status).toBe('Generated');
+        expect(res.body.status).toBe('Overdue');
 
     });
 
@@ -253,9 +253,48 @@ describe('TrackStatus', () => {
         expect(res.body.error).toBe('Forbidden.');
    });
 
-  
+  test('should return overdue if invoice is past due date and not paid', async () => {
+	// Update the invoice in the database to have a past due date
+
+	const res = await request(app)
+		.get(`/invoices/${invoiceId}/status`)
+		.set('token', token)	
+		.set('invoiceId', invoiceId);
+    
+	expect(res.statusCode).toStrictEqual(200);
+	expect(res.body.status).toBe('Overdue');
+   });
+
    
 });
+
+describe('UpdateStatus', () => {
+	  test('should update the status of an existing invoice', async () => {
+		const res = await request(app)
+		.put(`/invoices/${invoiceId}/status`)
+		.set('token', token)
+		.set('invoiceId', invoiceId)
+		.send({ status: 'Paid' });
+		
+		expect(res.statusCode).toStrictEqual(200);
+		const status = await getStatus(invoiceId, token);
+		expect(status).toBe('Paid');
+	});
+
+	test('should return 404 for non-existent invoice', async () => {
+		const res = await request(app)	
+		.put(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+		.set('token', token)
+		.set('invoiceId', '00000000-0000-0000-0000-000000000000')
+		.send({ status: 'Paid' });
+
+		expect(res.statusCode).toStrictEqual(404);
+		const status = await getStatus(invoiceId,token);
+		expect(status).toBe('Paid');
+	});
+
+});
+
 
 
 

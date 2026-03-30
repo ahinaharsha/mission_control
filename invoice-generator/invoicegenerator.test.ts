@@ -15,16 +15,16 @@ beforeAll(async () => {
   // Any setup if needed before tests run
    await pool.query('DELETE FROM invoices');
   await pool.query('DELETE FROM users');
-});
+}, 10000);
 
 afterAll(async () => {
     try {
-      await pool.end();
+      // await pool.end(); // Removed to avoid hanging, since server uses the same pool
     } finally {
       http.globalAgent.destroy();
       https.globalAgent.destroy();
     }
-  });
+  }, 10000);
  
 async function request(method: string, url: string, options?: { json?: any; node?: any; headers?: Record<string, string> }) {
   const parsed = new URL(url);
