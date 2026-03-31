@@ -1,12 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { login, register } from '../api/client';
+import logo from '../assets/MCinvoicing.png';
 
-export default function Auth({ onLogin }) {
-  const [tab, setTab] = useState('login');
+function SpaceBackground() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let meteors = [];
+    let animId;
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+
+    const stars = Array.from({ length: 200 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.3,
+      o: Math.random() * 0.7 + 0.3,
+    }));
+
+    function resize() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function spawnMeteor() {
+      meteors.push({
+        x: Math.random() * W * 1.5,
+        y: -10,
+        len: Math.random() * 120 + 60,
+        speed: Math.random() * 6 + 4,
+        o: 1,
+        angle: Math.PI / 4,
+      });
+    }
+
+    function draw() {
+      ctx.fillStyle = '#000010';
+      ctx.fillRect(0, 0, W, H);
+
+      stars.forEach(s => {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.o})`;
+        ctx.fill();
+      });
+
+      if (Math.random() < 0.015) spawnMeteor();
+
+      meteors = meteors.filter(m => {
+        const ex = m.x + Math.cos(m.angle) * m.len;
+        const ey = m.y + Math.sin(m.angle) * m.len;
+        const grad = ctx.createLinearGradient(m.x, m.y, ex, ey);
+        grad.addColorStop(0, 'rgba(255,255,255,0)');
+        grad.addColorStop(1, `rgba(255,255,255,${m.o})`);
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(ex, ey);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        m.x += Math.cos(m.angle) * m.speed;
+        m.y += Math.sin(m.angle) * m.speed;
+        m.o -= 0.012;
+        return m.o > 0 && m.x < W + 100 && m.y < H + 100;
+      });
+
+      animId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    draw();
+    window.addEventListener('resize', resize);
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}
+    />
+  );
+}
+
+export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
+  const [tab, setTab] = useState(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hovered, setHovered] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,19 +117,25 @@ export default function Auth({ onLogin }) {
 
   return (
     <div style={styles.page}>
+      <SpaceBackground />
+      <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
       <div style={styles.card}>
         <h1 style={styles.title}>🧾 Invoice Generator</h1>
 
         <div style={styles.tabs}>
           <button
-            style={{ ...styles.tab, ...(tab === 'login' ? styles.tabActive : {}) }}
+            style={{ ...styles.tab, ...(tab === 'login' ? styles.tabActive : {}), ...(hovered === 'login' && tab !== 'login' ? styles.tabHover : {}) }}
             onClick={() => { setTab('login'); setError(''); }}
+            onMouseEnter={() => setHovered('login')}
+            onMouseLeave={() => setHovered(null)}
           >
             Login
           </button>
           <button
-            style={{ ...styles.tab, ...(tab === 'register' ? styles.tabActive : {}) }}
+            style={{ ...styles.tab, ...(tab === 'register' ? styles.tabActive : {}), ...(hovered === 'register' && tab !== 'register' ? styles.tabHover : {}) }}
             onClick={() => { setTab('register'); setError(''); }}
+            onMouseEnter={() => setHovered('register')}
+            onMouseLeave={() => setHovered(null)}
           >
             Register
           </button>
@@ -87,41 +179,53 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#f0f4f8',
+    position: 'relative',
+    background: '#000010',
   },
   card: {
-    background: '#fff',
+    position: 'relative',
+    zIndex: 1,
+    background: 'rgba(255,255,255,0.08)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
     borderRadius: 12,
     padding: '2rem',
     width: '100%',
     maxWidth: 400,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+    boxShadow: '0 4px 30px rgba(0,0,0,0.4)',
+    border: '1px solid rgba(255,255,255,0.15)',
   },
   title: {
     textAlign: 'center',
     marginBottom: '1.5rem',
     fontSize: '1.6rem',
-    color: '#1a202c',
+    color: '#ffffff',
   },
   tabs: {
     display: 'flex',
     marginBottom: '1.5rem',
-    borderBottom: '2px solid #e2e8f0',
+    padding: 4,
+    gap: 4,
   },
   tab: {
     flex: 1,
-    padding: '0.6rem',
+    padding: '0.5rem',
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     fontSize: '1rem',
-    color: '#718096',
+    color: 'rgba(255,255,255,0.5)',
     fontWeight: 500,
+    borderRadius: 999,
+    transition: 'all 0.2s',
   },
   tabActive: {
-    color: '#4f46e5',
-    borderBottom: '2px solid #4f46e5',
-    marginBottom: -2,
+    color: '#ffffff',
+    background: '#4f46e5',
+  },
+  tabHover: {
+    color: '#ffffff',
+    background: 'rgba(255,255,255,0.1)',
   },
   form: {
     display: 'flex',
@@ -131,15 +235,17 @@ const styles = {
   label: {
     fontSize: '0.85rem',
     fontWeight: 600,
-    color: '#4a5568',
+    color: 'rgba(255,255,255,0.7)',
     marginTop: '0.5rem',
   },
   input: {
     padding: '0.6rem 0.8rem',
-    border: '1px solid #e2e8f0',
+    border: '1px solid rgba(255,255,255,0.2)',
     borderRadius: 8,
     fontSize: '1rem',
     outline: 'none',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#ffffff',
   },
   btn: {
     marginTop: '1rem',
@@ -153,8 +259,15 @@ const styles = {
     cursor: 'pointer',
   },
   error: {
-    color: '#e53e3e',
+    color: '#f87171',
     fontSize: '0.875rem',
     margin: 0,
+  },
+  logo: {
+    position: 'fixed',
+    top: 20,
+    left: 24,
+    height: 90,
+    zIndex: 2,
   },
 };
