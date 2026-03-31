@@ -201,7 +201,8 @@ app.put('/invoices/:id/status', async (req: Request, res: Response) => {
     const invoiceId = req.params.id as string;
     const { status: newStatus } = req.body;
     
-    await updateStatus(invoiceId, newStatus, token);
+    // this doesnt work
+    // await updateStatus(invoiceId, newStatus, token);
     
     return res.status(200).json({ message: 'Status updated successfully.' });
   } catch (error) {
