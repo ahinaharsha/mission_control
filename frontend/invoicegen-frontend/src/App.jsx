@@ -1,25 +1,32 @@
+//App.jsx
 import { useState } from 'react';
 import Auth from './pages/Auth';
+import Homepage from './pages/Homepage';
 import InvoiceForm from './pages/InvoiceForm';
 
 function App() {
+  const [page, setPage] = useState('home');
   const [token, setToken] = useState(localStorage.getItem('token') || null);
 
   function handleLogin(newToken) {
     localStorage.setItem('token', newToken);
     setToken(newToken);
+    setPage('app');
   }
 
   function handleLogout() {
     localStorage.removeItem('token');
     setToken(null);
+    setPage('home');
   }
 
-  if (!token) {
-    return <Auth onLogin={handleLogin} />;
+  function handleNavigate(destination) {
+    setPage(destination);
   }
 
-  return <InvoiceForm token={token} onLogout={handleLogout} />;
+  if (token) return <InvoiceForm token={token} onLogout={handleLogout} />;
+  if (page === 'login' || page === 'register') return <Auth onLogin={handleLogin} initialTab={page} onNavigate={handleNavigate} />;
+  return <Homepage onNavigate={handleNavigate} />;
 }
 
 export default App;
