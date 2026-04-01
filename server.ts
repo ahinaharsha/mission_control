@@ -14,7 +14,7 @@ import { generateInvoice } from './invoice-generator/generator';
 import { retrieveInvoices } from './invoice-retrieval/retrieveInvoices';
 import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
-import { getStatus } from './invoice-generator/TrackStatus';
+import { getStatus,updateStatus } from './invoice-generator/TrackStatus';
 import { updateInvoice } from './invoice-update/updateInvoice';
 
 // Set up web app
@@ -202,7 +202,7 @@ app.put('/invoices/:id/status', async (req: Request, res: Response) => {
     const { status: newStatus } = req.body;
     
     // this doesnt work
-    // await updateStatus(invoiceId, newStatus, token);
+    await updateStatus(invoiceId, newStatus, token);
     
     return res.status(200).json({ message: 'Status updated successfully.' });
   } catch (error) {
