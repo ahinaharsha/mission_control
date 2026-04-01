@@ -103,7 +103,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Invoice'
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invoiceId:
+                    type: string
+                  filePath:
+                    type: string
         '400':
           description: Bad request - missing required fields, invalid date formats, or invalid item values
         '401':
@@ -158,7 +165,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Invoice'
+                type: object
+                properties:
+                  message:
+                    type: string
         '400':
           description: Bad request - invalid values
         '401':
@@ -183,6 +193,13 @@ paths:
       responses:
         '200':
           description: Invoice deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         '401':
           description: Unauthorised
         '403':
@@ -336,7 +353,6 @@ components:
 
     InvoiceInput:
       type: object
-      required: [customer, lineItems, currency, tax, from]
       properties:
         customer:
           $ref: '#/components/schemas/CustomerInformation'
@@ -359,59 +375,28 @@ components:
     Invoice:
       type: object
       properties:
-        id:
+        invoiceId:
           type: string
-        customer:
-          $ref: '#/components/schemas/CustomerInformation'
-        from:
-          $ref: '#/components/schemas/FromDetails'
-        lineItems:
-          type: array
-          items:
-            $ref: '#/components/schemas/LineItem'
-        currency:
+        userId:
           type: string
-        tax:
-          $ref: '#/components/schemas/TaxDetails'
-        subtotal:
-          type: number
-        taxAmount:
-          type: number
-        totalAmount:
-          type: number
+        xml:
+          type: string
         status:
           type: string
-          enum: [DRAFT, GENERATED, FINALISED, SENT, OVERDUE, PAID]
+          enum: [Generated, InProgress, Sent, Paid, Overdue, Deleted]
+
+    InvoiceWithStatus:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+        userId:
+          type: string
+        xml:
+          type: string
+        status:
+          type: string
+          enum: [Generated, InProgress, Sent, Paid, Overdue, Deleted]
         createdAt:
           type: string
           format: date-time
-        finalisedAt:
-          type: string
-          format: date-time
-        sentAt:
-          type: string
-          format: date-time
-        paidAt:
-          type: string
-          format: date-time
-
-    InvoiceWithStatus:
-      allOf:
-        - $ref: '#/components/schemas/Invoice'
-        - type: object
-          properties:
-            status:
-              type: string
-              enum: [DRAFT, GENERATED, FINALISED, SENT, OVERDUE, PAID]
-            createdAt:
-              type: string
-              format: date-time
-            finalisedAt:
-              type: string
-              format: date-time
-            sentAt:
-              type: string
-              format: date-time
-            paidAt:
-              type: string
-              format: date-time
