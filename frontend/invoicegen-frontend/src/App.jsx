@@ -1,8 +1,8 @@
-//App.jsx
 import { useState } from 'react';
 import Auth from './pages/Auth';
 import Homepage from './pages/Homepage';
 import InvoiceForm from './pages/InvoiceForm';
+import Retrieve from './pages/Retrieval';
 
 function App() {
   const [page, setPage] = useState('home');
@@ -26,6 +26,7 @@ function App() {
 
   if (token) return <InvoiceForm token={token} onLogout={handleLogout} />;
   if (page === 'login' || page === 'register') return <Auth onLogin={handleLogin} initialTab={page} onNavigate={handleNavigate} />;
+  if (page === 'retrieve') return <Retrieve onNavigate={handleNavigate} />;
   return <Homepage onNavigate={handleNavigate} />;
 }
 
