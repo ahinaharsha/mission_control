@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { login, register } from '../api/client';
-import logo from '../assets/MCinvoicing.png';
+import logo from '../assets/MCInvoicing_White.png';
 
 function SpaceBackground() {
   const canvasRef = useRef(null);
@@ -81,7 +81,7 @@ function SpaceBackground() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}
+      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, filter: 'blur(1px)', }}
     />
   );
 }
@@ -185,7 +185,7 @@ const styles = {
   card: {
     position: 'relative',
     zIndex: 1,
-    background: 'rgba(255,255,255,0.08)',
+    background: 'rgba(135, 122, 122, 0.1)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     borderRadius: 12,
