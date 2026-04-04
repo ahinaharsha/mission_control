@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createInvoice, logout } from '../api/client';
 import { buildOrderXML } from '../utils/xmlBuilder';
+import jsPDF from 'jspdf';
 
 const emptyAddress = { street: '', city: '', postcode: '', country: '' };
 
@@ -29,7 +30,6 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  // --- Nested field updaters ---
   function setFrom(field, value) {
     setForm(f => ({ ...f, from: { ...f.from, [field]: value } }));
   }
@@ -56,7 +56,6 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
     setForm(f => ({ ...f, lineItems: f.lineItems.filter((_, i) => i !== index) }));
   }
 
-  // --- Submit ---
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -65,7 +64,6 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
     try {
       const xml = buildOrderXML(form);
       const data = await createInvoice(xml, token);
-      // Save to local invoice list for the dashboard
       if (data.id) {
         const saved = JSON.parse(localStorage.getItem('invoices') || '[]');
         saved.unshift({ id: data.id, customer: form.customer.fullName, createdAt: new Date().toLocaleDateString() });
@@ -84,7 +82,118 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
     onLogout();
   }
 
-  // --- Subtotal calculation ---
+  function downloadPDF() {
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    const line = () => {
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, y, 190, y);
+      y += 6;
+    };
+
+    const text = (str, x, size = 11, bold = false) => {
+      doc.setFontSize(size);
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.text(str, x, y);
+    };
+
+    // Header bar
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', margin, 22);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 22);
+    y = 50;
+
+    // From section
+    doc.setTextColor(30, 30, 30);
+    text('From', margin, 10, true);
+    y += 6;
+    text(form.from.businessName, margin, 10);
+    y += 5;
+    text(`ABN: ${form.from.abnNumber}`, margin, 9);
+    y += 5;
+    if (form.from.taxId) { text(`Tax ID: ${form.from.taxId}`, margin, 9); y += 5; }
+    text(`${form.from.address.street}, ${form.from.address.city}`, margin, 9);
+    y += 5;
+    text(`${form.from.address.postcode}, ${form.from.address.country}`, margin, 9);
+    y += 10;
+
+    // Bill To section
+    text('Bill To', margin, 10, true);
+    y += 6;
+    text(form.customer.fullName, margin, 10);
+    y += 5;
+    text(form.customer.email, margin, 9);
+    y += 5;
+    text(form.customer.phone, margin, 9);
+    y += 5;
+    text(`${form.customer.billingAddress.street}, ${form.customer.billingAddress.city}`, margin, 9);
+    y += 5;
+    text(`${form.customer.billingAddress.postcode}, ${form.customer.billingAddress.country}`, margin, 9);
+    y += 10;
+
+    line();
+
+    // Line items header
+    doc.setFillColor(245, 245, 250);
+    doc.rect(margin, y - 4, 170, 10, 'F');
+    text('Description', margin, 10, true);
+    text('Qty', 110, 10, true);
+    text('Rate', 135, 10, true);
+    text('Amount', 160, 10, true);
+    y += 10;
+    line();
+
+    // Line items rows
+    form.lineItems.forEach(item => {
+      text(item.description, margin, 10);
+      text(String(item.quantity), 110, 10);
+      text(`${form.currency} ${item.rate.toFixed(2)}`, 130, 10);
+      text(`${form.currency} ${(item.quantity * item.rate).toFixed(2)}`, 158, 10);
+      y += 8;
+    });
+
+    y += 4;
+    line();
+
+    // Totals
+    const subtotal = form.lineItems.reduce((sum, i) => sum + i.quantity * i.rate, 0);
+    const tax = subtotal * 0.1;
+    const total = subtotal + tax;
+
+    y += 4;
+    text('Subtotal:', 130, 10);
+    text(`${form.currency} ${subtotal.toFixed(2)}`, 158, 10);
+    y += 7;
+    text('GST (10%):', 130, 10);
+    text(`${form.currency} ${tax.toFixed(2)}`, 158, 10);
+    y += 7;
+
+    // Total row with purple background
+    doc.setFillColor(79, 70, 229);
+    doc.rect(128, y - 5, 62, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    text('Total:', 130, 11, true);
+    text(`${form.currency} ${total.toFixed(2)}`, 158, 11, true);
+    doc.setTextColor(30, 30, 30);
+
+    // Footer
+    y += 20;
+    line();
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Thank you for your business.', margin, y);
+
+    doc.save(`invoice-${form.customer.fullName.replace(/\s+/g, '-')}.pdf`);
+  }
+
   const subtotal = form.lineItems.reduce((sum, i) => sum + i.quantity * i.rate, 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
@@ -107,14 +216,13 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
                 <pre style={styles.xmlBox}>{result.filePath}</pre>
               </details>
             )}
-            <button style={styles.btn} onClick={() => { setResult(null); setForm(defaultForm); }}>
-              Create Another Invoice
-            </button>
-            {onDone && (
-              <button style={{ ...styles.btn, background: '#e2e8f0', color: '#4a5568', marginLeft: '0.75rem' }} onClick={onDone}>
-                ← Back to Dashboard
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+              <button style={styles.btn} onClick={downloadPDF}>⬇ Download PDF</button>
+              <button style={styles.btn} onClick={() => { setResult(null); setForm(defaultForm); }}>Create Another Invoice</button>
+              {onDone && (
+                <button style={{ ...styles.btn, background: '#e2e8f0', color: '#4a5568' }} onClick={onDone}>← Back to Dashboard</button>
+              )}
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -179,7 +287,6 @@ export default function InvoiceForm({ token, onLogout, onDone }) {
               ))}
               <button type="button" style={styles.addBtn} onClick={addLineItem}>+ Add Line Item</button>
 
-              {/* Totals */}
               <div style={styles.totals}>
                 <div style={styles.totalRow}><span>Subtotal</span><span>{form.currency} {subtotal.toFixed(2)}</span></div>
                 <div style={styles.totalRow}><span>GST (10%)</span><span>{form.currency} {tax.toFixed(2)}</span></div>
@@ -287,7 +394,7 @@ const styles = {
     fontSize: '0.75rem', overflow: 'auto', maxHeight: 300,
   },
   btn: {
-    marginTop: '1.5rem', padding: '0.75rem 2rem', background: '#4f46e5', color: '#fff',
+    padding: '0.75rem 2rem', background: '#4f46e5', color: '#fff',
     border: 'none', borderRadius: 8, fontSize: '1rem', fontWeight: 600, cursor: 'pointer',
   },
 };
