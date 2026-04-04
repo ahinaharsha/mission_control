@@ -123,9 +123,8 @@ app.post("/invoices", async (req: Request, res: Response) => {
 app.get('/invoices/:id', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
-    authenticate(token);
     const invoiceId = req.params.id as string;
-    const invoice = await retrieveInvoices(invoiceId);
+    const invoice = await retrieveInvoices(invoiceId, token);
     return res.status(200).json(invoice);
   } catch (error) {
     if (error instanceof HttpError) {

@@ -2,6 +2,7 @@ import request from 'sync-request-curl';
 import pool from '../datastore'
 import { HttpError } from '../../class';
 import { authRegister, authLogin, authLogout, authenticate } from './auth';
+import { describe, expect, test, afterAll, beforeEach } from '@jest/globals';
 const SERVER_URL = 'http://localhost:3000';
 
 beforeEach(async () => {
