@@ -1,73 +1,23 @@
-import {describe, expect, test, afterAll, beforeAll} from '@jest/globals';
-import { create_invoice, generateInvoice,parseOrderXML,validateInvoiceInput } from "./generator";
-import { InvoiceInput } from '../interface';
-import fs from 'fs';
-import http from 'http';
-import https from 'https';
-import { URL } from 'url';
-import pool from '../AWS/datastore';
-
-import { authLogin, authRegister } from '../AWS/auth/auth';
-import e from 'express';
-import { validate } from 'uuid';
-
-beforeAll(async () => {
-  // Any setup if needed before tests run
-   await pool.query('DELETE FROM invoices');
-  await pool.query('DELETE FROM users');
-}, 10000);
-
-afterAll(async () => {
-    try {
-      // await pool.end(); // Removed to avoid hanging, since server uses the same pool
-    } finally {
-      http.globalAgent.destroy();
-      https.globalAgent.destroy();
-    }
-  }, 10000);
- 
-async function request(method: string, url: string, options?: { json?: any; node?: any; headers?: Record<string, string> }) {
-  const parsed = new URL(url);
-  const lib = parsed.protocol === 'https:' ? https : http;
-  const body = options?.json !== undefined
-    ? typeof options.json === 'string'
-      ? options.json
-      : JSON.stringify(options.json)
-    : undefined;
-
-  const headers = {
-    ...(options?.headers ?? {}),
-    ...(body
-      ? {
-          'Content-Type': typeof options?.json === 'string' ? 'application/xml' : 'application/json',
-          'Content-Length': Buffer.byteLength(body).toString(),
-        }
-      : {}),
-  };
-
-  const reqOptions = {
-    method,
-    hostname: parsed.hostname,
-    port: parsed.port,
-    path: parsed.pathname + parsed.search,
-    headers,
-  };
-
-  return new Promise<{statusCode: number; body: Buffer; headers: any}>((resolve, reject) => {
-    const req = lib.request(reqOptions, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body: Buffer.concat(chunks), headers: res.headers }));
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
-  });
-}
-
-
-const SERVER_URL = 'http://localhost:3000';
-
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TrackStatus_1 = require("./TrackStatus");
+const globals_1 = require("@jest/globals");
+const supertest_1 = __importDefault(require("supertest"));
+const server_1 = require("../server");
+const datastore_1 = __importDefault(require("../AWS/datastore"));
+const auth_1 = require("../AWS/auth/auth");
 const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
 	<cbc:UBLVersionID>2.0</cbc:UBLVersionID>
@@ -78,6 +28,7 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 	<cbc:CopyIndicator>false</cbc:CopyIndicator>
 	<cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
 	<cbc:IssueDate>2005-06-20</cbc:IssueDate>
+	<cbc:DueDate>2025-06-20</cbc:DueDate>
 	<cbc:Note>sample</cbc:Note>
 	<cac:BuyerCustomerParty>
 		<cbc:CustomerAssignedAccountID>XFB01</cbc:CustomerAssignedAccountID>
@@ -247,190 +198,86 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 			</cac:Item>
 		</cac:LineItem>
 	</cac:OrderLine>
-</Order>`
-
-const invalidxml = '<noxml>';
-const noxml = '';
-const invalidinvoiceinput = {
-
-	  customer: {
-		id: "CUST-1",
-		fullName: "John Doe",
-		email: "john@test.com",
-		phone: "12345678",
-		billingAddress: {
-			street: "456 Road",
-			},
-
-		shippingAddress: {
-			street: "456 Road",
-			city: "Sydney",
-			postcode: "2001",
-			country: "AU"
-		}
-		},
-		lineItems: [
-		{
-			description: "Product A",
-			quantity: 2,
-			rate: 50
-		}],
-		currency: "AUD",
-		tax: {
-			taxId: "GST",
-			countryCode: "AU",
-			taxPercentage: 10
-		},
-
-		from: {
-
-			businessName: "Test Business",
-			address: {
-			street: "123 Street",
-			city: "Sydney",
-			postcode: "2000",
-			country: "AU"
-			},
-			taxId: "gst-123",
-			abnNumber: "456",
-			dueDate: new Date("2026-07-01")
-		}     
-	};
-	
-
-
-
-  describe("Invoice Generator", () => {
-  test("should generate an invoice XML", async () => {
+</Order>`;
+let token;
+let invoiceId;
+(0, globals_1.beforeAll)(() => __awaiter(void 0, void 0, void 0, function* () {
+    yield datastore_1.default.query('DELETE FROM invoices');
+    yield datastore_1.default.query('DELETE FROM users');
     const testEmail = `test-${Date.now()}@gmail.com`;
-    await authRegister(testEmail, 'correctpassword123');
-    const tokenRes = await authLogin(testEmail, 'correctpassword123');
-
-    const res = await request('POST', `${SERVER_URL}/invoices`, {
-      headers: { token: tokenRes.token },
-      json: validxml
-    });
-
-
-    expect(res.statusCode).toBe(201);
-    const body = JSON.parse(res.body.toString());
-    expect(body.message).toBe("Invoice generated successfully.");
-    expect(body.filePath).toBeDefined();
-	expect(body.invoiceId).toBeDefined();
-  });
- 
-	test("should return 400 for invalid XML", async () => {
-		const testEmail = `test-${Date.now()}@gmail.com`;
-		await authRegister(testEmail, 'correctpassword123');
-		const tokenRes = await authLogin(testEmail, 'correctpassword123');
-		
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		headers: { token: tokenRes.token, 'Content-Type': 'application/xml' },
-		json: invalidxml  // use body not json
-		});
-		
-		expect(res.statusCode).toBe(400);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Invalid XML format.");
-	});
-	
-
-	test("should return 400 for missing XML", async () => {
-		const testEmail = `test-${Date.now()}@gmail.com`;
-		await authRegister(testEmail, 'correctpassword123');
-		const tokenRes = await authLogin(testEmail, 'correctpassword123');	
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		headers: { token: tokenRes.token, 'Content-Type': 'application/xml' },
-		json: noxml  // use body not json
-		});	
-		expect(res.statusCode).toBe(400);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Invalid XML format.");
-	});
-
-	test("Not logged in", async () => {
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		json: validxml	
-		});
-		expect(res.statusCode).toBe(401);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Not logged in.");
-	});
-
-
-	test("should generate invoice input json from xml", () => {
-		const input = validxml;
-		const result = parseOrderXML(input);
-		expect(result).toBeDefined();
-		expect(result.customer).toBeDefined();
-		expect(result.lineItems).toBeDefined();
-		expect(result.currency).toBeDefined();
-		expect(result.tax).toBeDefined();
-		expect(result.from).toBeDefined();
-	});
-	
-	
-		
-
-	test("should generate valid XML", () => {
-
-		const input = {
-
-		customer: {
-			id: "CUST-1",
-			fullName: "John Doe",
-			email: "john@test.com",
-			phone: "12345678",
-			billingAddress: {
-				street: "456 Road",
-				city: "Sydney",
-				postcode: "2001",
-				country: "AU"
-				},
-
-			shippingAddress: {
-				street: "456 Road",
-				city: "Sydney",
-				postcode: "2001",
-				country: "AU"
-			}
-		},
-		lineItems: [
-		{
-			description: "Product A",
-			quantity: 2,
-			rate: 50
-		}],
-		currency: "AUD",
-		tax: {
-			taxId: "GST",
-			countryCode: "AU",
-			taxPercentage: 10
-		},
-
-		from: {
-
-			businessName: "Test Business",
-			address: {
-			street: "123 Street",
-			city: "Sydney",
-			postcode: "2000",
-			country: "AU"
-			},
-			taxId: "gst-123",
-			abnNumber: "456",
-			dueDate: new Date("2026-07-01")
-		}     
-	};
-
-		const xml = create_invoice(input);
-
-		expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-		expect(xml).toContain("John Doe");
-		expect(xml).toContain("Product A");
-
-
-	});
-
-	
+    yield (0, auth_1.authRegister)(testEmail, 'correctpassword123');
+    const loginRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
+    token = loginRes.token;
+    // Create an invoice to test with
+    yield (0, supertest_1.default)(server_1.app)
+        .post('/invoices')
+        .set('token', token)
+        .set('Content-Type', 'application/xml')
+        .send(validxml);
+    const result = yield datastore_1.default.query(`SELECT invoiceId FROM invoices ORDER BY invoiceId DESC LIMIT 1`);
+    invoiceId = result.rows[0].invoiceid;
+}), 30000);
+(0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
+    yield datastore_1.default.end();
+}), 30000);
+(0, globals_1.describe)('getstatus', () => {
+    (0, globals_1.test)('should return the status of an existing invoice', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/invoices/${invoiceId}/status`)
+            .set('token', token)
+            .set('invoiceId', invoiceId);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body.status).toBe('Overdue');
+    }));
+    (0, globals_1.test)('should return 404 for non-existent invoice', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+            .set('token', token)
+            .set('invoiceId', '00000000-0000-0000-0000-000000000000');
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
+    }));
+    (0, globals_1.test)('should return 403 for invoice belonging to another user', () => __awaiter(void 0, void 0, void 0, function* () {
+        // Create a second user and invoice
+        const testEmail2 = `test2-${Date.now()}@gmail.com`;
+        yield (0, auth_1.authRegister)(testEmail2, 'correctpassword123');
+        const loginRes2 = yield (0, auth_1.authLogin)(testEmail2, 'correctpassword123');
+        const token2 = loginRes2.token;
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/invoices/${invoiceId}/status`)
+            .set('token', token2)
+            .set('invoiceId', invoiceId);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
+        (0, globals_1.expect)(res.body.error).toBe('Forbidden.');
+    }));
+    (0, globals_1.test)('should return overdue if invoice is past due date and not paid', () => __awaiter(void 0, void 0, void 0, function* () {
+        // Update the invoice in the database to have a past due date
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/invoices/${invoiceId}/status`)
+            .set('token', token)
+            .set('invoiceId', invoiceId);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body.status).toBe('Overdue');
+    }));
+});
+(0, globals_1.describe)('UpdateStatus', () => {
+    (0, globals_1.test)('should update the status of an existing invoice', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .put(`/invoices/${invoiceId}/status`)
+            .set('token', token)
+            .set('invoiceId', invoiceId)
+            .send({ status: 'Paid' });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+        const status = yield (0, TrackStatus_1.getStatus)(invoiceId, token);
+        (0, globals_1.expect)(status).toBe('Paid');
+    }));
+    (0, globals_1.test)('should return 404 for non-existent invoice', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .put(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+            .set('token', token)
+            .set('invoiceId', '00000000-0000-0000-0000-000000000000')
+            .send({ status: 'Paid' });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
+        const status = yield (0, TrackStatus_1.getStatus)(invoiceId, token);
+        (0, globals_1.expect)(status).toBe('Paid');
+    }));
 });
