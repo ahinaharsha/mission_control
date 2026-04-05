@@ -112,7 +112,11 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
     <div style={styles.page}>
       <SpaceBackground />
 
-      <style>{`.nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }`}</style>
+      <style>{`
+  .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-fade { animation: fadeIn 0.5s ease forwards; }
+`}</style>
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -134,7 +138,7 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
         </div>
       </nav>
 
-      <div style={styles.centeredContent}>
+      <div className="page-fade" style={styles.centeredContent}>
         <div style={styles.card}>
           <h1 style={styles.title}>🧾 Invoice Generator</h1>
           <div style={styles.tabs}>

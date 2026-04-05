@@ -110,7 +110,11 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
       <SpaceBackground />
 
       {/* Nav */}
-      <style>{`.nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }`}</style>
+      <style>{`
+  .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-fade { animation: fadeIn 0.5s ease forwards; }
+`}</style>
       <nav style={s.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...s.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={s.navLinks}>
@@ -120,7 +124,7 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
         </div>
       </nav>
 
-      <div style={s.container}>
+      <div className="page-fade" style={s.container}>
         {result ? (
           /* ---- SUCCESS ---- */
           <div style={s.card}>

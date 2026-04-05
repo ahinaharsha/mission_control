@@ -84,7 +84,11 @@ export default function Retrieval({ onNavigate, token, onLogout }) {
     <div style={styles.page}>
       <canvas ref={canvasRef} style={styles.canvas} />
 
-      <style>{`.nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }`}</style>
+      <style>{`
+  .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-fade { animation: fadeIn 0.5s ease forwards; }
+`}</style>
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -103,7 +107,7 @@ export default function Retrieval({ onNavigate, token, onLogout }) {
         </div>
       </nav>
 
-      <div style={styles.container}>
+      <div className="page-fade" style={styles.container}>
         <div style={styles.card}>
           <h1 style={styles.title}>Retrieve Invoice</h1>
           <p style={styles.subtitle}>
