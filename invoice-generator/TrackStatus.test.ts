@@ -237,6 +237,55 @@ describe('getstatus', () => {
         expect(res.statusCode).toStrictEqual(404);
     });
 
+	test('should handle invoice with missing due date', async () => {
+  		await pool.query(
+    		`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('44444444-4444-4444-4444-444444444444', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+    		[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`]
+  		);
+  		const res = await request(app)
+    		.get(`/invoices/44444444-4444-4444-4444-444444444444/status`)
+    		.set('token', token);
+  		expect(res.statusCode).toStrictEqual(200);
+	});
+
+	test('should handle invoice with empty due date tag', async () => {
+		await pool.query(
+			`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('55555555-5555-5555-5555-555555555555', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+			[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate></cbc:DueDate></Invoice>`]
+		);
+		const res = await request(app)
+			.get(`/invoices/55555555-5555-5555-5555-555555555555/status`)
+			.set('token', token);
+		expect(res.statusCode).toStrictEqual(200);
+	});
+
+	test('should return 401 for no token on get status', async () => {
+		const res = await request(app)
+			.get(`/invoices/${invoiceId}/status`);
+		expect(res.statusCode).toStrictEqual(401);
+		expect(res.body).toStrictEqual({ error: expect.any(String) });
+	});
+
+	test('should return 401 for no token on update status', async () => {
+		const res = await request(app)
+			.put(`/invoices/${invoiceId}/status`)
+			.send({ status: 'Paid' });
+		expect(res.statusCode).toStrictEqual(401);
+		expect(res.body).toStrictEqual({ error: expect.any(String) });
+	});
+
+	test('should return immediately if status is already Overdue', async () => {
+		await pool.query(
+			`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('66666666-6666-6666-6666-666666666666', (SELECT userId FROM users WHERE token = $1), $2, 'Overdue')`,
+			[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]
+		);
+		const res = await request(app)
+			.get(`/invoices/66666666-6666-6666-6666-666666666666/status`)
+			.set('token', token);
+		expect(res.statusCode).toStrictEqual(200);
+		expect(res.body.status).toBe('Overdue');
+	});
+
     test('should return 403 for invoice belonging to another user', async () => {
         // Create a second user and invoice
         const testEmail2 = `test2-${Date.now()}@gmail.com`;
@@ -265,11 +314,21 @@ describe('getstatus', () => {
 	expect(res.body.status).toBe('Overdue');
    });
 
-   
+  test('should set status to Overdue if due date has passed', async () => {
+	await pool.query(
+		`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('77777777-7777-7777-7777-777777777777', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+		[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]
+	);
+	const res = await request(app)
+		.get(`/invoices/77777777-7777-7777-7777-777777777777/status`)
+		.set('token', token);
+	expect(res.statusCode).toStrictEqual(200);
+	expect(res.body.status).toBe('Overdue');
+	});   
 });
 
 describe('UpdateStatus', () => {
-	  test('should update the status of an existing invoice', async () => {
+	test('should update the status of an existing invoice', async () => {
 		const res = await request(app)
 		.put(`/invoices/${invoiceId}/status`)
 		.set('token', token)
@@ -279,6 +338,15 @@ describe('UpdateStatus', () => {
 		expect(res.statusCode).toStrictEqual(200);
 		const status = await getStatus(invoiceId, token);
 		expect(status).toBe('Paid');
+	});
+
+	test('should return 400 for invalid status value', async () => {
+		const res = await request(app)
+			.put(`/invoices/${invoiceId}/status`)
+			.set('token', token)
+			.send({ status: 'InvalidStatus' });
+		expect(res.statusCode).toStrictEqual(400);
+		expect(res.body).toStrictEqual({ error: expect.any(String) });
 	});
 
 	test('should return 404 for non-existent invoice', async () => {
@@ -291,6 +359,18 @@ describe('UpdateStatus', () => {
 		expect(res.statusCode).toStrictEqual(404);
 		const status = await getStatus(invoiceId,token);
 		expect(status).toBe('Paid');
+	});
+
+	test('should return 403 for invoice belonging to another user on update status', async () => {
+		const otherEmail = `other-${Date.now()}@gmail.com`;
+		await authRegister(otherEmail, 'correctpassword123');
+		const otherLogin = await authLogin(otherEmail, 'correctpassword123');
+		const res = await request(app)
+			.put(`/invoices/${invoiceId}/status`)
+			.set('token', otherLogin.token)
+			.send({ status: 'Paid' });
+		expect(res.statusCode).toStrictEqual(403);
+		expect(res.body).toStrictEqual({ error: expect.any(String) });
 	});
 
 });

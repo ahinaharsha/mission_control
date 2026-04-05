@@ -20,9 +20,7 @@ function getText(node: any): string {
 
 export async function getStatus(invoiceId: string, token: string | undefined){
     //Returns the status of the invoice with the given ID. Possible statuses: "Generated", "InProgress", "Sent", "Paid", "Overdue", "Deleted"
-    if (!token) {
-        throw new HttpError('Not logged in.', 401);
-    }
+    authenticate(token);
     
     const decoded = jwt.decode(token as string) as { userId: string };
     const userId = decoded.userId;
@@ -49,7 +47,7 @@ export async function getStatus(invoiceId: string, token: string | undefined){
   const dueDateStr = getText(inv['cbc:DueDate']);
   let currentStatus = invoice.status;
 
-  if (currentStatus === 'overdue') {
+  if (currentStatus === 'Overdue') {
     return currentStatus;
   }
   // If invoice is not yet paid or deleted, check if it's overdue
@@ -80,9 +78,7 @@ export async function getStatus(invoiceId: string, token: string | undefined){
 
 export async function updateStatus(invoiceId: string, status: string, token: string | undefined)
  {
-    if (!token) {
-      throw new HttpError('Not logged in.', 401);
-    }
+    authenticate(token);
     
     const decoded = jwt.decode(token as string) as { userId: string };
 
