@@ -7,6 +7,7 @@ import path from 'path';
 import { PeppolToolkit } from "@pixeldrive/peppol-toolkit"
 import { v4 as uuidv4 } from 'uuid';
 import pool from "../AWS/datastore";
+import { authenticate } from "../AWS/auth/auth";
 
 // Function to parse the input XML and extract necessary details for invoice generation
 export function parseOrderXML(xml: string): InvoiceInput {
@@ -258,9 +259,7 @@ export function create_invoice(input: InvoiceInput): string {
 
 // Main function to handle the entire invoice generation process
 export async function generateInvoice(xml: string, token: string|undefined): Promise<generatorResult> {
-    if (!token) {
-      throw new HttpError('Not logged in.', 401);
-    }
+    authenticate(token);
 
     if (!xml || xml.trim() === '' || xml === '{}' || !xml.trim().startsWith('<')) {
       throw new HttpError('Invalid XML format.', 400);
@@ -292,10 +291,6 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
     const result = await pool.query(   `INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status)   VALUES ($1, $2, $3, $4, $5)   RETURNING *`,  
        [invoiceId, userId, invoiceXML, JSON.stringify(input), 'Generated'] );
  
-
-    
-    
-
     return {
         output:invoiceXML ,
         message: "Invoice generated successfully.",
