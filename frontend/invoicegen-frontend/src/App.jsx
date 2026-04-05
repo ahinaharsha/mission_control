@@ -24,9 +24,9 @@ function App() {
     setPage(destination);
   }
 
-  if (token) return <InvoiceForm token={token} onLogout={handleLogout} />;
+  if (page === 'retrieve') return <Retrieve onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
+  if (token) return <InvoiceForm token={token} onLogout={handleLogout} onNavigate={handleNavigate} />;
   if (page === 'login' || page === 'register') return <Auth onLogin={handleLogin} initialTab={page} onNavigate={handleNavigate} />;
-  if (page === 'retrieve') return <Retrieve onNavigate={handleNavigate} />;
   return <Homepage onNavigate={handleNavigate} />;
 }
 

@@ -112,6 +112,11 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
     <div style={styles.page}>
       <SpaceBackground />
 
+      <style>{`
+  .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-fade { animation: fadeIn 0.5s ease forwards; }
+`}</style>
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -133,7 +138,7 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
         </div>
       </nav>
 
-      <div style={styles.centeredContent}>
+      <div className="page-fade" style={styles.centeredContent}>
         <div style={styles.card}>
           <h1 style={styles.title}>🧾 Invoice Generator</h1>
           <div style={styles.tabs}>
@@ -164,6 +169,21 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
             <button type="submit" style={styles.btn} disabled={loading}>
               {loading ? 'Please wait...' : tab === 'login' ? 'Login' : 'Register'}
             </button>
+            <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>
+              {tab === 'login' ? (
+                <>Haven't registered yet?{' '}
+                  <span onClick={() => { setTab('register'); setError(''); }} style={{ color: '#a5b4fc', cursor: 'pointer', fontWeight: 600 }}>
+                    Register now
+                  </span>
+                </>
+              ) : (
+                <>Already have an account?{' '}
+                  <span onClick={() => { setTab('login'); setError(''); }} style={{ color: '#a5b4fc', cursor: 'pointer', fontWeight: 600 }}>
+                    Login here
+                  </span>
+                </>
+              )}
+            </p>
           </form>
         </div>
       </div>
@@ -186,14 +206,14 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '16px 32px',
+    padding: '10px 32px',
     borderBottom: '1px solid rgba(255,255,255,0.08)',
     background: 'rgba(255,255,255,0.05)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     boxSizing: 'border-box',
   },
-  logo: { height: 100 },
+  logo: { height: 60 },
   navLinks: { display: 'flex', gap: 32, alignItems: 'center' },
   navLink: {
     color: 'rgba(255,255,255,0.45)',
