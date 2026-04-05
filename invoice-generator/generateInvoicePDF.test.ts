@@ -90,6 +90,18 @@ describe('GET /invoices/:id/pdf', () => {
   expect(res.statusCode).toStrictEqual(200);
 });
 
+test('Returns PDF with non-standard XML root element', async () => {
+  const nonStandardXML = `<?xml version="1.0" encoding="UTF-8"?><CustomInvoice></CustomInvoice>`;
+  await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('88888888-8888-8888-8888-888888888888', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`,
+    [token, nonStandardXML]
+  );
+  const res = await request(app)
+    .get(`/invoices/88888888-8888-8888-8888-888888888888/pdf`)
+    .set('token', token);
+  expect(res.statusCode).toStrictEqual(200);
+});
+
 test('Returns PDF with empty XML tags', async () => {
   const emptyTagsXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:ID></cbc:ID></Invoice>`;
   await pool.query(
