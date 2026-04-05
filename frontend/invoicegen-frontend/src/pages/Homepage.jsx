@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import logo from '../assets/MCInvoicing_White.png';
 
-export default function Home({ onNavigate }) {
+export default function Home({ onNavigate, token }) {
   const canvasRef = useRef(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Trigger fade-in after mount
     const timer = setTimeout(() => setVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -19,11 +18,11 @@ export default function Home({ onNavigate }) {
     const W = canvas.width, H = canvas.height;
 
     const bands = [
-      { y: H*0.55, amp: 120, freq: 0.004, speed: 0.00003, phase: 0,   color: [0,255,150],   alpha: 0.55, thickness: 100 },
-      { y: H*0.65, amp: 90,  freq: 0.005, speed: 0.00004, phase: 2.1, color: [80,200,255],  alpha: 0.38, thickness: 60  },
-      { y: H*0.50, amp: 75,  freq: 0.003, speed: 0.00002, phase: 4.3, color: [0,255,120],   alpha: 0.3,  thickness: 45  },
-      { y: H*0.72, amp: 60,  freq: 0.006, speed: 0.00005, phase: 1.0, color: [140,100,255], alpha: 0.25, thickness: 40  },
-      { y: H*0.48, amp: 50,  freq: 0.004, speed: 0.00003, phase: 3.5, color: [0,200,180],   alpha: 0.2,  thickness: 35  },
+      { y: H*0.55, amp: 120, freq: 0.004, speed: 0.000015, phase: 0,   color: [0,255,150],   alpha: 0.55, thickness: 100 },
+      { y: H*0.65, amp: 90,  freq: 0.005, speed: 0.00002, phase: 2.1, color: [80,200,255],  alpha: 0.38, thickness: 60  },
+      { y: H*0.50, amp: 75,  freq: 0.003, speed: 0.00001, phase: 4.3, color: [0,255,120],   alpha: 0.3,  thickness: 45  },
+      { y: H*0.72, amp: 60,  freq: 0.006, speed: 0.000025, phase: 1.0, color: [140,100,255], alpha: 0.25, thickness: 40  },
+      { y: H*0.48, amp: 50,  freq: 0.004, speed: 0.000013, phase: 3.5, color: [0,200,180],   alpha: 0.2,  thickness: 35  },
     ];
 
     let t = 0;
@@ -80,32 +79,36 @@ export default function Home({ onNavigate }) {
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
           <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
-          <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('login')}>Login</span>
-          <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('register')}>Register</span>
+          {token ? (
+            <>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>Create Invoice</span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('profile')}>Profile</span>
+            </>
+          ) : (
+            <>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('login')}>Login</span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('register')}>Register</span>
+            </>
+          )}
         </div>
       </nav>
 
-      {/* Hero */}
       <div style={styles.heroContainer}>
         <div className={`hero-fade${visible ? ' visible' : ''}`} style={styles.hero}>
-          <h1 style={styles.heroTitle}>Free invoice generator</h1>
-          <p style={styles.heroSubtitle}>
-            Create professional invoices without effort. Generate, track, and retrieve
-            your invoices, it is all in one place, and is tailored to your business needs.
-          </p>
-          <button style={styles.heroBtn} onClick={() => onNavigate('register')}>
-            Generate invoices now →
+          <h1 style={styles.heroTitle}>Free, smart invoicing<br />built to move fast</h1>
+            <p style={styles.heroSubtitle}>
+               MC Invoicing is a streamlined, efficient, and completely free e-invoicing solution. Generate and manage professional invoices in seconds — no unnecessary steps, no wasted time.
+            </p>
+          <button style={styles.heroBtn} onClick={() => onNavigate(token ? 'app' : 'register')}>
+            {token ? 'Create an invoice →' : 'Generate invoices now →'}
           </button>
         </div>
 
-        {/* Mockup */}
         <div className={`mockup-fade${visible ? ' visible' : ''}`} style={styles.mockupWrapper}>
           <div style={styles.mockup}>
-            {/* Mockup header */}
             <div style={styles.mockupHeader}>
               <span style={styles.mockupHeaderText}>INVOICE</span>
             </div>
-            {/* Mockup body */}
             <div style={styles.mockupBody}>
               <div style={styles.mockupRow}>
                 <div style={styles.mockupBox}>
@@ -162,7 +165,7 @@ export default function Home({ onNavigate }) {
 const styles = {
   page: {
     minHeight: '100vh', width: '100%', flex: 1, position: 'relative',
-    overflow: 'hidden', background: 'linear-gradient(180deg, #040814 0%, #081120 35%, #050b16 100%)',
+    overflow: 'hidden', background: 'linear-gradient(180deg, #030810 0%, #060e18 35%, #040a14 100%)',
     display: 'flex', flexDirection: 'column',
   },
   canvas: {

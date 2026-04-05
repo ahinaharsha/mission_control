@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { createInvoice, logout } from '../api/client';
+import { createInvoice } from '../api/client';
 import { buildOrderXML } from '../utils/xmlBuilder';
 import logo from '../assets/MCInvoicing_White.png';
 
@@ -8,7 +8,7 @@ const emptyAddress = { street: '', city: '', postcode: '', country: '' };
 const defaultForm = {
   from: { businessName: '', taxId: '', abnNumber: '', address: { ...emptyAddress } },
   customer: { id: '', fullName: '', email: '', phone: '', billingAddress: { ...emptyAddress }, shippingAddress: { ...emptyAddress } },
- lineItems: [{ description: '', quantity: 1, rate: '' }],
+  lineItems: [{ description: '', quantity: 1, rate: '' }],
   currency: 'AUD',
 };
 
@@ -30,7 +30,7 @@ function SpaceBackground() {
       meteors.push({ x: Math.random() * W * 1.5, y: -10, len: Math.random() * 120 + 60, speed: Math.random() * 6 + 4, o: 1, angle: Math.PI / 4 });
     }
     function draw() {
-      ctx.fillStyle = '#000010';
+      ctx.fillStyle = '#000008';
       ctx.fillRect(0, 0, W, H);
       stars.forEach(s => {
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
@@ -54,7 +54,7 @@ function SpaceBackground() {
     window.addEventListener('resize', resize);
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
   }, []);
-  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }} />;
+  return <canvas ref={canvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, filter: 'blur(1px)' }} />;
 }
 
 export default function InvoiceForm({ token, onLogout, onNavigate }) {
@@ -96,11 +96,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
     }
   }
 
-  async function handleLogout() {
-    try { await logout(token); } catch (_) {}
-    onLogout();
-  }
-
   const subtotal = form.lineItems.reduce((sum, i) => sum + i.quantity * (parseFloat(i.rate) || 0), 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
@@ -108,29 +103,25 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
   return (
     <div style={s.page}>
       <SpaceBackground />
-
-      {/* Nav */}
       <style>{`
-  .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .page-fade { animation: fadeIn 0.5s ease forwards; }
-`}</style>
+        .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .page-fade { animation: fadeIn 0.5s ease forwards; }
+      `}</style>
       <nav style={s.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...s.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={s.navLinks}>
           <span className="nav-link" style={s.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
           <span style={{ ...s.navLink, ...s.navLinkActive }}>Create Invoice</span>
-          <button className="nav-link" style={s.logoutBtn} onClick={handleLogout}>Logout</button>
+          <span className="nav-link" style={s.navLink} onClick={() => onNavigate('profile')}>Profile</span>
         </div>
       </nav>
 
       <div className="page-fade" style={s.container}>
         {result ? (
-          /* ---- SUCCESS ---- */
           <div style={s.card}>
             <h2 style={{ color: '#00e891', margin: '0 0 0.5rem' }}>✅ Invoice Created!</h2>
             <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '1.5rem' }}>{result.message}</p>
-
             {result.invoiceId && (
               <div style={s.invoiceIdBox}>
                 <span style={s.invoiceIdLabel}>Your Invoice ID</span>
@@ -141,23 +132,15 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
                 </button>
               </div>
             )}
-
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              <button style={s.primaryBtn} onClick={() => { setResult(null); setForm(defaultForm); }}>
-                + Create Another
-              </button>
-              <button style={s.secondaryBtn} onClick={() => onNavigate('retrieve')}>
-                🔍 Retrieve Invoice
-              </button>
+              <button style={s.primaryBtn} onClick={() => { setResult(null); setForm(defaultForm); }}>+ Create Another</button>
+              <button style={s.secondaryBtn} onClick={() => onNavigate('retrieve')}>🔍 Retrieve Invoice</button>
             </div>
           </div>
         ) : (
-          /* ---- FORM ---- */
           <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 860 }}>
-
             <h1 style={s.pageTitle}>Create Invoice</h1>
 
-            {/* FROM */}
             <div style={s.section}>
               <h2 style={s.sectionTitle}>From (Your Business)</h2>
               <div style={s.grid2}>
@@ -171,7 +154,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
               </div>
             </div>
 
-            {/* CUSTOMER */}
             <div style={s.section}>
               <h2 style={s.sectionTitle}>Bill To (Customer)</h2>
               <div style={s.grid2}>
@@ -189,7 +171,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
               </div>
             </div>
 
-            {/* LINE ITEMS */}
             <div style={s.section}>
               <h2 style={s.sectionTitle}>Line Items</h2>
               <p style={s.note}>⚠️ The backend currently processes only the first line item.</p>
@@ -216,7 +197,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
                 </div>
               ))}
               <button type="button" style={s.addBtn} onClick={addLineItem}>+ Add Line Item</button>
-
               <div style={s.totals}>
                 <div style={s.totalRow}><span>Subtotal</span><span>{form.currency} {subtotal.toFixed(2)}</span></div>
                 <div style={s.totalRow}><span>GST (10%)</span><span>{form.currency} {tax.toFixed(2)}</span></div>
@@ -226,7 +206,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
               </div>
             </div>
 
-            {/* CURRENCY */}
             <div style={s.section}>
               <h2 style={s.sectionTitle}>Currency</h2>
               <div style={s.grid2}>
@@ -244,7 +223,6 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
             </div>
 
             {error && <div style={s.errorBox}>{error}</div>}
-
             <button type="submit" style={s.submitBtn} disabled={loading}>
               {loading ? 'Generating...' : '🧾 Generate Invoice'}
             </button>
@@ -266,7 +244,7 @@ function Field({ label, value, onChange, type = 'text', required }) {
 
 const s = {
   page: {
-    minHeight: '100vh', background: '#000010',
+    minHeight: '100vh', background: '#000008',
     fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column',
   },
   nav: {
@@ -282,11 +260,6 @@ const s = {
     cursor: 'pointer', userSelect: 'none', paddingBottom: 2, borderBottom: '2px solid transparent',
   },
   navLinkActive: { color: '#ffffff', borderBottom: '2px solid rgba(255,255,255,0.6)' },
-  logoutBtn: {
-    padding: '0.4rem 1rem', background: 'rgba(255,255,255,0.08)',
-    border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6,
-    cursor: 'pointer', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem',
-  },
   container: {
     position: 'relative', zIndex: 1, flex: 1,
     display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -336,7 +309,6 @@ const s = {
     padding: '0.75rem', borderRadius: 8, marginBottom: '1rem',
     border: '1px solid rgba(255,80,80,0.25)',
   },
-  // Success screen
   card: {
     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: 16, padding: '2.5rem', maxWidth: 520, width: '100%', textAlign: 'center',
