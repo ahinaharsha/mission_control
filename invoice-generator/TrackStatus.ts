@@ -49,7 +49,7 @@ export async function getStatus(invoiceId: string, token: string | undefined){
   const dueDateStr = getText(inv['cbc:DueDate']);
   let currentStatus = invoice.status;
 
-  if (currentStatus === 'overdue') {
+  if (currentStatus === 'Overdue') {
     return currentStatus;
   }
   // If invoice is not yet paid or deleted, check if it's overdue

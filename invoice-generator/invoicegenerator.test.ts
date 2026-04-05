@@ -1,72 +1,20 @@
-import {describe, expect, test, afterAll, beforeAll} from '@jest/globals';
-import { create_invoice, generateInvoice,parseOrderXML,validateInvoiceInput } from "./generator";
+import { describe, expect, test, afterAll, beforeAll } from '@jest/globals';
+import { create_invoice, generateInvoice, parseOrderXML, validateInvoiceInput } from "./generator";
 import { InvoiceInput } from '../interface';
-import fs from 'fs';
-import http from 'http';
-import https from 'https';
-import { URL } from 'url';
 import pool from '../AWS/datastore';
-
 import { authLogin, authRegister } from '../AWS/auth/auth';
-import e from 'express';
-import { validate } from 'uuid';
+import request from 'supertest';
+import { app } from '../server';
+import { HttpError } from '../class';
 
 beforeAll(async () => {
-  // Any setup if needed before tests run
-   await pool.query('DELETE FROM invoices');
+  await pool.query('DELETE FROM invoices');
   await pool.query('DELETE FROM users');
 }, 10000);
 
 afterAll(async () => {
-    try {
-      // await pool.end(); // Removed to avoid hanging, since server uses the same pool
-    } finally {
-      http.globalAgent.destroy();
-      https.globalAgent.destroy();
-    }
-  }, 10000);
- 
-async function request(method: string, url: string, options?: { json?: any; node?: any; headers?: Record<string, string> }) {
-  const parsed = new URL(url);
-  const lib = parsed.protocol === 'https:' ? https : http;
-  const body = options?.json !== undefined
-    ? typeof options.json === 'string'
-      ? options.json
-      : JSON.stringify(options.json)
-    : undefined;
-
-  const headers = {
-    ...(options?.headers ?? {}),
-    ...(body
-      ? {
-          'Content-Type': typeof options?.json === 'string' ? 'application/xml' : 'application/json',
-          'Content-Length': Buffer.byteLength(body).toString(),
-        }
-      : {}),
-  };
-
-  const reqOptions = {
-    method,
-    hostname: parsed.hostname,
-    port: parsed.port,
-    path: parsed.pathname + parsed.search,
-    headers,
-  };
-
-  return new Promise<{statusCode: number; body: Buffer; headers: any}>((resolve, reject) => {
-    const req = lib.request(reqOptions, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode ?? 0, body: Buffer.concat(chunks), headers: res.headers }));
-    });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
-  });
-}
-
-
-const SERVER_URL = 'http://localhost:3000';
+  await pool.end();
+}, 10000);
 
 const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
@@ -247,190 +195,200 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 			</cac:Item>
 		</cac:LineItem>
 	</cac:OrderLine>
-</Order>`
+</Order>`;
 
 const invalidxml = '<noxml>';
 const noxml = '';
-const invalidinvoiceinput = {
 
-	  customer: {
-		id: "CUST-1",
-		fullName: "John Doe",
-		email: "john@test.com",
-		phone: "12345678",
-		billingAddress: {
-			street: "456 Road",
-			},
-
-		shippingAddress: {
-			street: "456 Road",
-			city: "Sydney",
-			postcode: "2001",
-			country: "AU"
-		}
-		},
-		lineItems: [
-		{
-			description: "Product A",
-			quantity: 2,
-			rate: 50
-		}],
-		currency: "AUD",
-		tax: {
-			taxId: "GST",
-			countryCode: "AU",
-			taxPercentage: 10
-		},
-
-		from: {
-
-			businessName: "Test Business",
-			address: {
-			street: "123 Street",
-			city: "Sydney",
-			postcode: "2000",
-			country: "AU"
-			},
-			taxId: "gst-123",
-			abnNumber: "456",
-			dueDate: new Date("2026-07-01")
-		}     
-	};
-	
-
-
-
-  describe("Invoice Generator", () => {
+describe("Invoice Generator", () => {
   test("should generate an invoice XML", async () => {
     const testEmail = `test-${Date.now()}@gmail.com`;
     await authRegister(testEmail, 'correctpassword123');
     const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
-    const res = await request('POST', `${SERVER_URL}/invoices`, {
-      headers: { token: tokenRes.token },
-      json: validxml
-    });
-
+    const res = await request(app)
+      .post('/invoices')
+      .set('token', tokenRes.token)
+      .set('Content-Type', 'application/xml')
+      .send(validxml);
 
     expect(res.statusCode).toBe(201);
-    const body = JSON.parse(res.body.toString());
-    expect(body.message).toBe("Invoice generated successfully.");
-    expect(body.filePath).toBeDefined();
-	expect(body.invoiceId).toBeDefined();
+    expect(res.body.message).toBe("Invoice generated successfully.");
+    expect(res.body.filePath).toBeDefined();
+    expect(res.body.invoiceId).toBeDefined();
   });
- 
-	test("should return 400 for invalid XML", async () => {
-		const testEmail = `test-${Date.now()}@gmail.com`;
-		await authRegister(testEmail, 'correctpassword123');
-		const tokenRes = await authLogin(testEmail, 'correctpassword123');
-		
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		headers: { token: tokenRes.token, 'Content-Type': 'application/xml' },
-		json: invalidxml  // use body not json
-		});
-		
-		expect(res.statusCode).toBe(400);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Invalid XML format.");
-	});
-	
 
-	test("should return 400 for missing XML", async () => {
-		const testEmail = `test-${Date.now()}@gmail.com`;
-		await authRegister(testEmail, 'correctpassword123');
-		const tokenRes = await authLogin(testEmail, 'correctpassword123');	
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		headers: { token: tokenRes.token, 'Content-Type': 'application/xml' },
-		json: noxml  // use body not json
-		});	
-		expect(res.statusCode).toBe(400);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Invalid XML format.");
-	});
+  test("should return 400 for invalid XML", async () => {
+    const testEmail = `test-${Date.now()}@gmail.com`;
+    await authRegister(testEmail, 'correctpassword123');
+    const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
-	test("Not logged in", async () => {
-		const res = await request('POST', `${SERVER_URL}/invoices`, {
-		json: validxml	
-		});
-		expect(res.statusCode).toBe(401);
-		const body = JSON.parse(res.body.toString());
-		expect(body.error).toBe("Not logged in.");
-	});
+    const res = await request(app)
+      .post('/invoices')
+      .set('token', tokenRes.token)
+      .set('Content-Type', 'application/xml')
+      .send(invalidxml);
 
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe("Invalid XML format.");
+  });
 
-	test("should generate invoice input json from xml", () => {
-		const input = validxml;
-		const result = parseOrderXML(input);
-		expect(result).toBeDefined();
-		expect(result.customer).toBeDefined();
-		expect(result.lineItems).toBeDefined();
-		expect(result.currency).toBeDefined();
-		expect(result.tax).toBeDefined();
-		expect(result.from).toBeDefined();
-	});
-	
-	
-		
+  test("should return 400 for missing XML", async () => {
+    const testEmail = `test-${Date.now()}@gmail.com`;
+    await authRegister(testEmail, 'correctpassword123');
+    const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
-	test("should generate valid XML", () => {
+    const res = await request(app)
+      .post('/invoices')
+      .set('token', tokenRes.token)
+      .set('Content-Type', 'application/xml')
+      .send(noxml);
 
-		const input = {
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe("Invalid XML format.");
+  });
 
-		customer: {
-			id: "CUST-1",
-			fullName: "John Doe",
-			email: "john@test.com",
-			phone: "12345678",
-			billingAddress: {
-				street: "456 Road",
-				city: "Sydney",
-				postcode: "2001",
-				country: "AU"
-				},
+  test("Not logged in", async () => {
+    const res = await request(app)
+      .post('/invoices')
+      .set('Content-Type', 'application/xml')
+      .send(validxml);
 
-			shippingAddress: {
-				street: "456 Road",
-				city: "Sydney",
-				postcode: "2001",
-				country: "AU"
-			}
-		},
-		lineItems: [
-		{
-			description: "Product A",
-			quantity: 2,
-			rate: 50
-		}],
-		currency: "AUD",
-		tax: {
-			taxId: "GST",
-			countryCode: "AU",
-			taxPercentage: 10
-		},
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error).toBe("Not logged in.");
+  });
 
-		from: {
+  test("should generate invoice input json from xml", () => {
+    const result = parseOrderXML(validxml);
+    expect(result).toBeDefined();
+    expect(result.customer).toBeDefined();
+    expect(result.lineItems).toBeDefined();
+    expect(result.currency).toBeDefined();
+    expect(result.tax).toBeDefined();
+    expect(result.from).toBeDefined();
+  });
 
-			businessName: "Test Business",
-			address: {
-			street: "123 Street",
-			city: "Sydney",
-			postcode: "2000",
-			country: "AU"
-			},
-			taxId: "gst-123",
-			abnNumber: "456",
-			dueDate: new Date("2026-07-01")
-		}     
-	};
+  test("should generate valid XML", () => {
+    const input = {
+      customer: {
+        id: "CUST-1",
+        fullName: "John Doe",
+        email: "john@test.com",
+        phone: "12345678",
+        billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+        shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+      },
+      lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+      currency: "AUD",
+      tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+      from: {
+        businessName: "Test Business",
+        address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+        taxId: "gst-123",
+        abnNumber: "456",
+        dueDate: new Date("2026-07-01")
+      }
+    };
 
-		const xml = create_invoice(input);
+    const xml = create_invoice(input);
+    expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    expect(xml).toContain("John Doe");
+    expect(xml).toContain("Product A");
+  });
 
-		expect(xml).toContain("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-		expect(xml).toContain("John Doe");
-		expect(xml).toContain("Product A");
+  test('should throw HttpError for invalid from details', () => {
+    const invalidInput = {
+      customer: {
+        id: "CUST-1",
+        fullName: "John Doe",
+        email: "john@test.com",
+        phone: "12345678",
+        billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+        shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+      },
+      lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+      currency: "AUD",
+      tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+      from: {
+        businessName: '',
+        address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+        taxId: "gst-123",
+        abnNumber: "456",
+        dueDate: new Date("2026-07-01")
+      }
+    };
+    expect(() => validateInvoiceInput(invalidInput)).toThrow(HttpError);
+  });
 
+  test('should throw HttpError for invalid line items', () => {
+    const invalidInput = {
+      customer: {
+        id: "CUST-1",
+        fullName: "John Doe",
+        email: "john@test.com",
+        phone: "12345678",
+        billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+        shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+      },
+      lineItems: [],
+      currency: "AUD",
+      tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+      from: {
+        businessName: "Test Business",
+        address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+        taxId: "gst-123",
+        abnNumber: "456",
+        dueDate: new Date("2026-07-01")
+      }
+    };
+    expect(() => validateInvoiceInput(invalidInput)).toThrow(HttpError);
+  });
 
-	});
+  test('should throw HttpError for invalid currency', () => {
+    const invalidInput = {
+      customer: {
+        id: "CUST-1",
+        fullName: "John Doe",
+        email: "john@test.com",
+        phone: "12345678",
+        billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+        shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+      },
+      lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+      currency: "INVALID",
+      tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+      from: {
+        businessName: "Test Business",
+        address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+        taxId: "gst-123",
+        abnNumber: "456",
+        dueDate: new Date("2026-07-01")
+      }
+    };
+    expect(() => validateInvoiceInput(invalidInput)).toThrow(HttpError);
+  });
 
-	
+  test('should throw HttpError for invalid tax', () => {
+    const invalidInput = {
+      customer: {
+        id: "CUST-1",
+        fullName: "John Doe",
+        email: "john@test.com",
+        phone: "12345678",
+        billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+        shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+      },
+      lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+      currency: "AUD",
+      tax: { taxId: "", countryCode: "AU", taxPercentage: 10 },
+      from: {
+        businessName: "Test Business",
+        address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+        taxId: "gst-123",
+        abnNumber: "456",
+        dueDate: new Date("2026-07-01")
+      }
+    };
+    expect(() => validateInvoiceInput(invalidInput)).toThrow(HttpError);
+  });
 });
