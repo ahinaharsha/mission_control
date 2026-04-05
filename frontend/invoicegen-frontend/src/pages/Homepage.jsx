@@ -60,6 +60,7 @@ export default function Home({ onNavigate }) {
   return (
     <div style={styles.page}>
       <canvas ref={canvasRef} style={styles.canvas} />
+      <style>{`.nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }`}</style>
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -99,14 +100,14 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '16px 32px',
+    padding: '10px 32px',
     borderBottom: '1px solid rgba(255,255,255,0.08)',
     background: 'rgba(255,255,255,0.05)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     boxSizing: 'border-box',
   },
-  logo: { height: 100 },
+  logo: { height: 60 },
   navLinks: { display: 'flex', gap: 32, alignItems: 'center' },
   navLink: {
     color: 'rgba(255,255,255,0.45)',
