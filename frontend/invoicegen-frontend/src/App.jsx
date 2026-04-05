@@ -3,6 +3,7 @@ import Auth from './pages/Auth';
 import Homepage from './pages/Homepage';
 import InvoiceForm from './pages/InvoiceForm';
 import Retrieve from './pages/Retrieval';
+import Profile from './pages/Profile';
 
 function App() {
   const [page, setPage] = useState('home');
@@ -11,7 +12,7 @@ function App() {
   function handleLogin(newToken) {
     localStorage.setItem('token', newToken);
     setToken(newToken);
-    setPage('app');
+    setPage('home');
   }
 
   function handleLogout() {
@@ -24,10 +25,12 @@ function App() {
     setPage(destination);
   }
 
+  if (page === 'profile') return <Profile onNavigate={handleNavigate} onLogout={handleLogout} token={token} />;
+  if (page === 'home') return <Homepage onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
   if (page === 'retrieve') return <Retrieve onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
-  if (token) return <InvoiceForm token={token} onLogout={handleLogout} onNavigate={handleNavigate} />;
+  if (page === 'app' && token) return <InvoiceForm token={token} onLogout={handleLogout} onNavigate={handleNavigate} />;
   if (page === 'login' || page === 'register') return <Auth onLogin={handleLogin} initialTab={page} onNavigate={handleNavigate} />;
-  return <Homepage onNavigate={handleNavigate} />;
+  return <Homepage onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
 }
 
 export default App;
