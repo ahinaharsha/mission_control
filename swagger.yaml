@@ -236,6 +236,46 @@ paths:
         '409':
           description: Conflict - invalid lifecycle state detected
 
+    put:
+      summary: Update invoice status
+      tags: [Invoices]
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [Generated, InProgress, Sent, Paid, Overdue, Deleted]
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Bad request - invalid status value
+        '401':
+          description: Unauthorised
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found - invoice ID does not exist
+
   /invoices/{id}/pdf:
     get:
       summary: Download invoice as PDF
