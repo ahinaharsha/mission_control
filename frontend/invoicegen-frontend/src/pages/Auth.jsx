@@ -1,3 +1,4 @@
+//Auth.jsx
 import { useState, useEffect, useRef } from 'react';
 import { login, register } from '../api/client';
 import logo from '../assets/MCInvoicing_White.png';
@@ -36,7 +37,7 @@ function SpaceBackground() {
     }
 
     function draw() {
-      ctx.fillStyle = '#000010';
+      ctx.fillStyle = '#000008';
       ctx.fillRect(0, 0, W, H);
       stars.forEach(s => {
         ctx.beginPath();
@@ -140,7 +141,7 @@ export default function Auth({ onLogin, initialTab = 'login', onNavigate }) {
 
       <div className="page-fade" style={styles.centeredContent}>
         <div style={styles.card}>
-          <h1 style={styles.title}>🧾 Invoice Generator</h1>
+          <h1 style={styles.title}>MC Invoicing Login/Register</h1>
           <div style={styles.tabs}>
             <button
               style={{ ...styles.tab, ...(tab === 'login' ? styles.tabActive : {}), ...(hovered === 'login' && tab !== 'login' ? styles.tabHover : {}) }}
@@ -197,7 +198,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
-    background: '#000010',
+    background: '#000008',
   },
   nav: {
     position: 'relative',
