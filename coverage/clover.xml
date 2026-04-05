@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1775335348288" clover="3.2.0">
-  <project timestamp="1775335348288" name="All files">
-    <metrics statements="424" coveredstatements="409" conditionals="345" coveredconditionals="290" methods="36" coveredmethods="36" elements="805" coveredelements="735" complexity="0" loc="424" ncloc="424" packages="7" files="10" classes="10"/>
+<coverage generated="1775386183174" clover="3.2.0">
+  <project timestamp="1775386183174" name="All files">
+    <metrics statements="424" coveredstatements="422" conditionals="345" coveredconditionals="302" methods="36" coveredmethods="36" elements="805" coveredelements="760" complexity="0" loc="424" ncloc="424" packages="7" files="10" classes="10"/>
     <package name="mission_control">
       <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
       <file name="class.ts" path="/home/ahina/seng2021/mission_control/class.ts">
         <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="1" count="7" type="stmt"/>
-        <line num="5" count="34" type="stmt"/>
-        <line num="6" count="34" type="stmt"/>
-        <line num="7" count="34" type="stmt"/>
+        <line num="5" count="44" type="stmt"/>
+        <line num="6" count="44" type="stmt"/>
+        <line num="7" count="44" type="stmt"/>
       </file>
     </package>
     <package name="mission_control.AWS.auth">
@@ -24,27 +24,27 @@
         <line num="7" count="7" type="stmt"/>
         <line num="8" count="7" type="cond" truecount="1" falsecount="1"/>
         <line num="10" count="7" type="stmt"/>
-        <line num="11" count="34" type="cond" truecount="4" falsecount="0"/>
+        <line num="11" count="35" type="cond" truecount="4" falsecount="0"/>
         <line num="12" count="2" type="stmt"/>
-        <line num="15" count="32" type="stmt"/>
-        <line num="20" count="32" type="cond" truecount="2" falsecount="0"/>
+        <line num="15" count="33" type="stmt"/>
+        <line num="20" count="33" type="cond" truecount="2" falsecount="0"/>
         <line num="21" count="1" type="stmt"/>
-        <line num="24" count="31" type="stmt"/>
-        <line num="25" count="31" type="stmt"/>
-        <line num="27" count="31" type="stmt"/>
+        <line num="24" count="32" type="stmt"/>
+        <line num="25" count="32" type="stmt"/>
+        <line num="27" count="32" type="stmt"/>
         <line num="33" count="7" type="stmt"/>
-        <line num="34" count="33" type="cond" truecount="4" falsecount="0"/>
+        <line num="34" count="34" type="cond" truecount="4" falsecount="0"/>
         <line num="35" count="2" type="stmt"/>
-        <line num="39" count="31" type="stmt"/>
-        <line num="44" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="32" type="stmt"/>
+        <line num="44" count="32" type="cond" truecount="2" falsecount="0"/>
         <line num="45" count="1" type="stmt"/>
-        <line num="48" count="30" type="stmt"/>
-        <line num="51" count="30" type="stmt"/>
-        <line num="52" count="30" type="cond" truecount="2" falsecount="0"/>
+        <line num="48" count="31" type="stmt"/>
+        <line num="51" count="31" type="stmt"/>
+        <line num="52" count="31" type="cond" truecount="2" falsecount="0"/>
         <line num="53" count="1" type="stmt"/>
-        <line num="57" count="29" type="stmt"/>
-        <line num="60" count="29" type="stmt"/>
-        <line num="65" count="29" type="stmt"/>
+        <line num="57" count="30" type="stmt"/>
+        <line num="60" count="30" type="stmt"/>
+        <line num="65" count="30" type="stmt"/>
         <line num="68" count="7" type="stmt"/>
         <line num="69" count="33" type="cond" truecount="2" falsecount="0"/>
         <line num="70" count="5" type="stmt"/>
@@ -61,12 +61,12 @@
       <metrics statements="19" coveredstatements="19" conditionals="6" coveredconditionals="6" methods="1" coveredmethods="1"/>
       <file name="invoiceDeletion.ts" path="/home/ahina/seng2021/mission_control/invoice-deletion/invoiceDeletion.ts">
         <metrics statements="19" coveredstatements="19" conditionals="6" coveredconditionals="6" methods="1" coveredmethods="1"/>
-        <line num="1" count="5" type="stmt"/>
-        <line num="2" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="5" count="5" type="stmt"/>
-        <line num="7" count="5" type="stmt"/>
-        <line num="9" count="5" type="stmt"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
+        <line num="9" count="6" type="stmt"/>
         <line num="10" count="7" type="stmt"/>
         <line num="12" count="5" type="stmt"/>
         <line num="13" count="5" type="stmt"/>
@@ -83,36 +83,36 @@
       </file>
     </package>
     <package name="mission_control.invoice-generator">
-      <metrics statements="224" coveredstatements="209" conditionals="235" coveredconditionals="181" methods="17" coveredmethods="17"/>
+      <metrics statements="224" coveredstatements="222" conditionals="235" coveredconditionals="193" methods="17" coveredmethods="17"/>
       <file name="TrackStatus.ts" path="/home/ahina/seng2021/mission_control/invoice-generator/TrackStatus.ts">
-        <metrics statements="51" coveredstatements="44" conditionals="26" coveredconditionals="18" methods="3" coveredmethods="3"/>
-        <line num="2" count="5" type="stmt"/>
-        <line num="3" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="6" count="5" type="stmt"/>
-        <line num="9" count="4" type="cond" truecount="1" falsecount="1"/>
-        <line num="10" count="0" type="stmt"/>
-        <line num="13" count="4" type="cond" truecount="1" falsecount="1"/>
-        <line num="14" count="4" type="stmt"/>
-        <line num="17" count="0" type="stmt"/>
-        <line num="21" count="5" type="stmt"/>
-        <line num="23" count="6" type="cond" truecount="1" falsecount="1"/>
-        <line num="24" count="0" type="stmt"/>
-        <line num="27" count="6" type="stmt"/>
-        <line num="28" count="6" type="stmt"/>
-        <line num="29" count="6" type="stmt"/>
-        <line num="35" count="6" type="cond" truecount="2" falsecount="0"/>
+        <metrics statements="51" coveredstatements="51" conditionals="26" coveredconditionals="25" methods="3" coveredmethods="3"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="9" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="10" count="1" type="stmt"/>
+        <line num="13" count="7" type="cond" truecount="2" falsecount="0"/>
+        <line num="14" count="6" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="21" count="6" type="stmt"/>
+        <line num="23" count="11" type="cond" truecount="2" falsecount="0"/>
+        <line num="24" count="1" type="stmt"/>
+        <line num="27" count="10" type="stmt"/>
+        <line num="28" count="10" type="stmt"/>
+        <line num="29" count="10" type="stmt"/>
+        <line num="35" count="10" type="cond" truecount="2" falsecount="0"/>
         <line num="36" count="1" type="stmt"/>
-        <line num="39" count="5" type="stmt"/>
-        <line num="41" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="39" count="9" type="stmt"/>
+        <line num="41" count="9" type="cond" truecount="2" falsecount="0"/>
         <line num="42" count="1" type="stmt"/>
-        <line num="45" count="4" type="stmt"/>
-        <line num="46" count="4" type="stmt"/>
-        <line num="49" count="4" type="stmt"/>
-        <line num="50" count="4" type="stmt"/>
-        <line num="52" count="4" type="cond" truecount="1" falsecount="1"/>
-        <line num="53" count="0" type="stmt"/>
-        <line num="56" count="4" type="cond" truecount="4" falsecount="0"/>
+        <line num="45" count="8" type="stmt"/>
+        <line num="46" count="8" type="stmt"/>
+        <line num="49" count="8" type="stmt"/>
+        <line num="50" count="8" type="stmt"/>
+        <line num="52" count="8" type="cond" truecount="2" falsecount="0"/>
+        <line num="53" count="2" type="stmt"/>
+        <line num="56" count="6" type="cond" truecount="4" falsecount="0"/>
         <line num="57" count="2" type="stmt"/>
         <line num="59" count="2" type="stmt"/>
         <line num="64" count="2" type="stmt"/>
@@ -122,37 +122,37 @@
         <line num="69" count="2" type="cond" truecount="1" falsecount="1"/>
         <line num="70" count="2" type="stmt"/>
         <line num="71" count="2" type="stmt"/>
-        <line num="78" count="4" type="stmt"/>
-        <line num="81" count="5" type="stmt"/>
-        <line num="83" count="2" type="cond" truecount="1" falsecount="1"/>
-        <line num="84" count="0" type="stmt"/>
-        <line num="87" count="2" type="stmt"/>
-        <line num="90" count="2" type="stmt"/>
-        <line num="91" count="2" type="cond" truecount="1" falsecount="1"/>
-        <line num="92" count="0" type="stmt"/>
-        <line num="94" count="2" type="stmt"/>
-        <line num="98" count="2" type="stmt"/>
-        <line num="103" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="78" count="6" type="stmt"/>
+        <line num="81" count="6" type="stmt"/>
+        <line num="83" count="5" type="cond" truecount="2" falsecount="0"/>
+        <line num="84" count="1" type="stmt"/>
+        <line num="87" count="4" type="stmt"/>
+        <line num="90" count="4" type="stmt"/>
+        <line num="91" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="92" count="1" type="stmt"/>
+        <line num="94" count="3" type="stmt"/>
+        <line num="98" count="3" type="stmt"/>
+        <line num="103" count="3" type="cond" truecount="2" falsecount="0"/>
         <line num="104" count="1" type="stmt"/>
-        <line num="107" count="1" type="cond" truecount="1" falsecount="1"/>
-        <line num="108" count="0" type="stmt"/>
+        <line num="107" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="108" count="1" type="stmt"/>
         <line num="112" count="1" type="stmt"/>
       </file>
       <file name="generateInvoicePDF.ts" path="/home/ahina/seng2021/mission_control/invoice-generator/generateInvoicePDF.ts">
         <metrics statements="114" coveredstatements="114" conditionals="45" coveredconditionals="42" methods="8" coveredmethods="8"/>
-        <line num="1" count="5" type="stmt"/>
-        <line num="2" count="5" type="stmt"/>
-        <line num="3" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="5" count="5" type="stmt"/>
-        <line num="6" count="5" type="stmt"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
         <line num="9" count="84" type="cond" truecount="2" falsecount="0"/>
         <line num="10" count="52" type="stmt"/>
         <line num="13" count="32" type="cond" truecount="2" falsecount="0"/>
         <line num="14" count="31" type="stmt"/>
         <line num="17" count="1" type="stmt"/>
         <line num="21" count="108" type="cond" truecount="4" falsecount="0"/>
-        <line num="24" count="5" type="stmt"/>
+        <line num="24" count="6" type="stmt"/>
         <line num="25" count="8" type="stmt"/>
         <line num="27" count="6" type="stmt"/>
         <line num="28" count="6" type="stmt"/>
@@ -256,7 +256,7 @@
         <line num="197" count="4" type="stmt"/>
       </file>
       <file name="generator.ts" path="/home/ahina/seng2021/mission_control/invoice-generator/generator.ts">
-        <metrics statements="59" coveredstatements="51" conditionals="164" coveredconditionals="121" methods="6" coveredmethods="6"/>
+        <metrics statements="59" coveredstatements="57" conditionals="164" coveredconditionals="126" methods="6" coveredmethods="6"/>
         <line num="2" count="6" type="stmt"/>
         <line num="4" count="6" type="stmt"/>
         <line num="5" count="6" type="stmt"/>
@@ -264,69 +264,69 @@
         <line num="8" count="6" type="stmt"/>
         <line num="9" count="6" type="stmt"/>
         <line num="12" count="6" type="stmt"/>
-        <line num="14" count="21" type="stmt"/>
-        <line num="15" count="21" type="stmt"/>
-        <line num="17" count="21" type="stmt"/>
-        <line num="18" count="21" type="stmt"/>
-        <line num="20" count="21" type="stmt"/>
-        <line num="22" count="21" type="stmt"/>
-        <line num="24" count="21" type="stmt"/>
-        <line num="94" count="21" type="stmt"/>
+        <line num="14" count="23" type="stmt"/>
+        <line num="15" count="23" type="stmt"/>
+        <line num="17" count="23" type="stmt"/>
+        <line num="18" count="22" type="stmt"/>
+        <line num="20" count="22" type="stmt"/>
+        <line num="22" count="22" type="stmt"/>
+        <line num="24" count="22" type="stmt"/>
+        <line num="94" count="22" type="stmt"/>
         <line num="98" count="6" type="stmt"/>
-        <line num="99" count="24" type="stmt"/>
-        <line num="101" count="24" type="cond" truecount="2" falsecount="0"/>
+        <line num="99" count="29" type="stmt"/>
+        <line num="101" count="29" type="cond" truecount="2" falsecount="0"/>
         <line num="102" count="1" type="stmt"/>
-        <line num="104" count="23" type="stmt"/>
-        <line num="106" count="23" type="cond" truecount="1" falsecount="1"/>
-        <line num="107" count="0" type="stmt"/>
-        <line num="110" count="23" type="stmt"/>
-        <line num="112" count="23" type="cond" truecount="1" falsecount="1"/>
-        <line num="113" count="0" type="stmt"/>
-        <line num="116" count="23" type="stmt"/>
-        <line num="118" count="23" type="cond" truecount="1" falsecount="1"/>
-        <line num="119" count="0" type="stmt"/>
-        <line num="122" count="23" type="stmt"/>
-        <line num="123" count="23" type="cond" truecount="1" falsecount="1"/>
-        <line num="124" count="0" type="stmt"/>
+        <line num="104" count="28" type="stmt"/>
+        <line num="106" count="28" type="cond" truecount="2" falsecount="0"/>
+        <line num="107" count="1" type="stmt"/>
+        <line num="110" count="27" type="stmt"/>
+        <line num="112" count="27" type="cond" truecount="2" falsecount="0"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="116" count="26" type="stmt"/>
+        <line num="118" count="26" type="cond" truecount="2" falsecount="0"/>
+        <line num="119" count="1" type="stmt"/>
+        <line num="122" count="25" type="stmt"/>
+        <line num="123" count="25" type="cond" truecount="2" falsecount="0"/>
+        <line num="124" count="1" type="stmt"/>
         <line num="130" count="6" type="stmt"/>
-        <line num="132" count="24" type="stmt"/>
-        <line num="134" count="24" type="stmt"/>
-        <line num="135" count="24" type="stmt"/>
-        <line num="139" count="24" type="stmt"/>
-        <line num="141" count="24" type="stmt"/>
-        <line num="143" count="24" type="stmt"/>
-        <line num="241" count="24" type="stmt"/>
-        <line num="256" count="24" type="stmt"/>
+        <line num="132" count="25" type="stmt"/>
+        <line num="134" count="25" type="stmt"/>
+        <line num="135" count="25" type="stmt"/>
+        <line num="139" count="25" type="stmt"/>
+        <line num="141" count="25" type="stmt"/>
+        <line num="143" count="25" type="stmt"/>
+        <line num="241" count="25" type="stmt"/>
+        <line num="256" count="25" type="stmt"/>
         <line num="260" count="6" type="stmt"/>
-        <line num="261" count="20" type="cond" truecount="1" falsecount="1"/>
-        <line num="262" count="0" type="stmt"/>
-        <line num="265" count="20" type="cond" truecount="5" falsecount="1"/>
+        <line num="261" count="23" type="cond" truecount="2" falsecount="0"/>
+        <line num="262" count="1" type="stmt"/>
+        <line num="265" count="22" type="cond" truecount="5" falsecount="1"/>
         <line num="266" count="0" type="stmt"/>
-        <line num="270" count="20" type="stmt"/>
-        <line num="271" count="20" type="stmt"/>
-        <line num="273" count="0" type="stmt"/>
-        <line num="276" count="20" type="stmt"/>
-        <line num="278" count="20" type="stmt"/>
-        <line num="279" count="20" type="stmt"/>
-        <line num="280" count="20" type="stmt"/>
-        <line num="281" count="20" type="stmt"/>
-        <line num="286" count="20" type="cond" truecount="1" falsecount="1"/>
+        <line num="270" count="22" type="stmt"/>
+        <line num="271" count="22" type="stmt"/>
+        <line num="273" count="1" type="stmt"/>
+        <line num="276" count="21" type="stmt"/>
+        <line num="278" count="21" type="stmt"/>
+        <line num="279" count="21" type="stmt"/>
+        <line num="280" count="21" type="stmt"/>
+        <line num="281" count="21" type="stmt"/>
+        <line num="286" count="21" type="cond" truecount="1" falsecount="1"/>
         <line num="287" count="0" type="stmt"/>
-        <line num="290" count="20" type="stmt"/>
-        <line num="291" count="20" type="stmt"/>
-        <line num="292" count="20" type="stmt"/>
-        <line num="299" count="20" type="stmt"/>
+        <line num="290" count="21" type="stmt"/>
+        <line num="291" count="21" type="stmt"/>
+        <line num="292" count="21" type="stmt"/>
+        <line num="299" count="21" type="stmt"/>
       </file>
     </package>
     <package name="mission_control.invoice-retrieval">
       <metrics statements="15" coveredstatements="15" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
       <file name="retrieveInvoices.ts" path="/home/ahina/seng2021/mission_control/invoice-retrieval/retrieveInvoices.ts">
         <metrics statements="15" coveredstatements="15" conditionals="4" coveredconditionals="4" methods="1" coveredmethods="1"/>
-        <line num="1" count="5" type="stmt"/>
-        <line num="3" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="5" count="5" type="stmt"/>
-        <line num="7" count="5" type="stmt"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="3" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="7" count="6" type="stmt"/>
         <line num="8" count="6" type="stmt"/>
         <line num="10" count="4" type="stmt"/>
         <line num="11" count="4" type="stmt"/>
@@ -343,13 +343,13 @@
       <metrics statements="37" coveredstatements="37" conditionals="20" coveredconditionals="20" methods="1" coveredmethods="1"/>
       <file name="updateInvoice.ts" path="/home/ahina/seng2021/mission_control/invoice-update/updateInvoice.ts">
         <metrics statements="37" coveredstatements="37" conditionals="20" coveredconditionals="20" methods="1" coveredmethods="1"/>
-        <line num="1" count="5" type="stmt"/>
-        <line num="2" count="5" type="stmt"/>
-        <line num="4" count="5" type="stmt"/>
-        <line num="5" count="5" type="stmt"/>
-        <line num="6" count="5" type="stmt"/>
-        <line num="8" count="5" type="stmt"/>
-        <line num="10" count="5" type="stmt"/>
+        <line num="1" count="6" type="stmt"/>
+        <line num="2" count="6" type="stmt"/>
+        <line num="4" count="6" type="stmt"/>
+        <line num="5" count="6" type="stmt"/>
+        <line num="6" count="6" type="stmt"/>
+        <line num="8" count="6" type="stmt"/>
+        <line num="10" count="6" type="stmt"/>
         <line num="11" count="10" type="stmt"/>
         <line num="13" count="8" type="stmt"/>
         <line num="14" count="8" type="stmt"/>
@@ -391,90 +391,90 @@
         <line num="5" count="7" type="stmt"/>
         <line num="6" count="7" type="stmt"/>
         <line num="8" count="7" type="stmt"/>
-        <line num="9" count="96" type="stmt"/>
-        <line num="11" count="96" type="cond" truecount="2" falsecount="0"/>
+        <line num="9" count="111" type="stmt"/>
+        <line num="11" count="111" type="cond" truecount="2" falsecount="0"/>
         <line num="12" count="3" type="stmt"/>
         <line num="13" count="3" type="stmt"/>
-        <line num="16" count="93" type="cond" truecount="2" falsecount="0"/>
+        <line num="16" count="108" type="cond" truecount="2" falsecount="0"/>
         <line num="17" count="4" type="stmt"/>
-        <line num="20" count="93" type="cond" truecount="2" falsecount="0"/>
+        <line num="20" count="108" type="cond" truecount="2" falsecount="0"/>
         <line num="21" count="3" type="stmt"/>
-        <line num="24" count="93" type="cond" truecount="2" falsecount="0"/>
+        <line num="24" count="108" type="cond" truecount="2" falsecount="0"/>
         <line num="25" count="3" type="stmt"/>
-        <line num="28" count="93" type="cond" truecount="2" falsecount="0"/>
+        <line num="28" count="108" type="cond" truecount="2" falsecount="0"/>
         <line num="29" count="3" type="stmt"/>
-        <line num="32" count="93" type="stmt"/>
+        <line num="32" count="108" type="stmt"/>
         <line num="35" count="7" type="stmt"/>
-        <line num="36" count="29" type="stmt"/>
-        <line num="37" count="29" type="cond" truecount="2" falsecount="0"/>
+        <line num="36" count="34" type="stmt"/>
+        <line num="37" count="34" type="cond" truecount="2" falsecount="0"/>
         <line num="38" count="1" type="stmt"/>
         <line num="39" count="1" type="stmt"/>
-        <line num="42" count="28" type="cond" truecount="2" falsecount="0"/>
-        <line num="43" count="1" type="stmt"/>
-        <line num="46" count="28" type="stmt"/>
+        <line num="42" count="33" type="cond" truecount="2" falsecount="0"/>
+        <line num="43" count="2" type="stmt"/>
+        <line num="46" count="33" type="stmt"/>
         <line num="47" count="1" type="stmt"/>
-        <line num="50" count="28" type="cond" truecount="2" falsecount="0"/>
+        <line num="50" count="33" type="cond" truecount="2" falsecount="0"/>
         <line num="51" count="1" type="stmt"/>
-        <line num="54" count="28" type="cond" truecount="2" falsecount="0"/>
+        <line num="54" count="33" type="cond" truecount="2" falsecount="0"/>
         <line num="55" count="1" type="stmt"/>
-        <line num="58" count="28" type="stmt"/>
+        <line num="58" count="33" type="stmt"/>
         <line num="61" count="7" type="stmt"/>
-        <line num="62" count="32" type="stmt"/>
-        <line num="64" count="32" type="cond" truecount="2" falsecount="0"/>
+        <line num="62" count="37" type="stmt"/>
+        <line num="64" count="37" type="cond" truecount="2" falsecount="0"/>
         <line num="65" count="1" type="stmt"/>
         <line num="66" count="1" type="stmt"/>
-        <line num="69" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="69" count="36" type="cond" truecount="2" falsecount="0"/>
         <line num="70" count="2" type="stmt"/>
-        <line num="73" count="31" type="cond" truecount="4" falsecount="0"/>
+        <line num="73" count="36" type="cond" truecount="4" falsecount="0"/>
         <line num="74" count="3" type="stmt"/>
-        <line num="77" count="31" type="cond" truecount="4" falsecount="0"/>
+        <line num="77" count="36" type="cond" truecount="4" falsecount="0"/>
         <line num="78" count="2" type="stmt"/>
-        <line num="81" count="31" type="stmt"/>
+        <line num="81" count="36" type="stmt"/>
         <line num="82" count="5" type="stmt"/>
-        <line num="85" count="31" type="stmt"/>
+        <line num="85" count="36" type="stmt"/>
         <line num="86" count="5" type="stmt"/>
-        <line num="89" count="31" type="stmt"/>
+        <line num="89" count="36" type="stmt"/>
         <line num="92" count="7" type="stmt"/>
-        <line num="93" count="30" type="stmt"/>
-        <line num="94" count="30" type="cond" truecount="2" falsecount="0"/>
-        <line num="95" count="1" type="stmt"/>
-        <line num="96" count="1" type="stmt"/>
-        <line num="99" count="29" type="stmt"/>
-        <line num="100" count="29" type="stmt"/>
-        <line num="101" count="29" type="cond" truecount="2" falsecount="0"/>
+        <line num="93" count="34" type="stmt"/>
+        <line num="94" count="34" type="cond" truecount="2" falsecount="0"/>
+        <line num="95" count="2" type="stmt"/>
+        <line num="96" count="2" type="stmt"/>
+        <line num="99" count="32" type="stmt"/>
+        <line num="100" count="32" type="stmt"/>
+        <line num="101" count="32" type="cond" truecount="2" falsecount="0"/>
         <line num="102" count="1" type="stmt"/>
-        <line num="105" count="29" type="cond" truecount="2" falsecount="0"/>
+        <line num="105" count="32" type="cond" truecount="2" falsecount="0"/>
         <line num="106" count="2" type="stmt"/>
-        <line num="109" count="29" type="cond" truecount="2" falsecount="0"/>
+        <line num="109" count="32" type="cond" truecount="2" falsecount="0"/>
         <line num="110" count="2" type="stmt"/>
-        <line num="114" count="29" type="stmt"/>
+        <line num="114" count="32" type="stmt"/>
         <line num="117" count="7" type="stmt"/>
-        <line num="118" count="28" type="stmt"/>
-        <line num="119" count="28" type="cond" truecount="2" falsecount="0"/>
-        <line num="120" count="1" type="stmt"/>
-        <line num="123" count="28" type="cond" truecount="4" falsecount="0"/>
+        <line num="118" count="31" type="stmt"/>
+        <line num="119" count="31" type="cond" truecount="2" falsecount="0"/>
+        <line num="120" count="2" type="stmt"/>
+        <line num="123" count="31" type="cond" truecount="4" falsecount="0"/>
         <line num="124" count="3" type="cond" truecount="2" falsecount="0"/>
         <line num="125" count="1" type="stmt"/>
         <line num="128" count="3" type="cond" truecount="4" falsecount="0"/>
         <line num="129" count="1" type="stmt"/>
-        <line num="136" count="28" type="stmt"/>
+        <line num="136" count="31" type="stmt"/>
         <line num="140" count="7" type="stmt"/>
-        <line num="141" count="29" type="stmt"/>
-        <line num="143" count="29" type="cond" truecount="2" falsecount="0"/>
+        <line num="141" count="31" type="stmt"/>
+        <line num="143" count="31" type="cond" truecount="2" falsecount="0"/>
         <line num="144" count="1" type="stmt"/>
         <line num="145" count="1" type="stmt"/>
-        <line num="148" count="28" type="cond" truecount="2" falsecount="0"/>
-        <line num="149" count="1" type="stmt"/>
-        <line num="152" count="28" type="cond" truecount="2" falsecount="0"/>
+        <line num="148" count="30" type="cond" truecount="2" falsecount="0"/>
+        <line num="149" count="2" type="stmt"/>
+        <line num="152" count="30" type="cond" truecount="2" falsecount="0"/>
         <line num="153" count="1" type="stmt"/>
-        <line num="156" count="28" type="cond" truecount="4" falsecount="0"/>
+        <line num="156" count="30" type="cond" truecount="4" falsecount="0"/>
         <line num="157" count="2" type="stmt"/>
-        <line num="160" count="28" type="stmt"/>
+        <line num="160" count="30" type="stmt"/>
       </file>
       <file name="validationHelpers.ts" path="/home/ahina/seng2021/mission_control/validationEngine/validationHelpers.ts">
         <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
         <line num="1" count="7" type="stmt"/>
-        <line num="2" count="634" type="stmt"/>
+        <line num="2" count="731" type="stmt"/>
       </file>
     </package>
   </project>
