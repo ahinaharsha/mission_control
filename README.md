@@ -19,6 +19,7 @@ FRONTEND
 Open a new terminal and run:
 cd frontend/invoicegen-frontend
 npm install
+npm install jwt-decode
 2. Start the frontend
 npm run dev
 You should see:
