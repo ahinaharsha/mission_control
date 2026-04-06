@@ -1,5 +1,6 @@
 // Profile.jsx
 import { useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/MCInvoicing_White.png';
 import { logout } from '../api/client';
 
@@ -19,7 +20,6 @@ export default function Profile({ onNavigate, onLogout, token }) {
         .logout-btn:hover { background: rgba(255,80,80,0.15) !important; color: #ff6b6b !important; }
       `}</style>
 
-      {/* Nav */}
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -30,8 +30,6 @@ export default function Profile({ onNavigate, onLogout, token }) {
       </nav>
 
       <div style={styles.body}>
-
-        {/* Sidebar */}
         <div style={styles.sidebar}>
           <div style={styles.sidebarTop}>
             <div
@@ -49,16 +47,11 @@ export default function Profile({ onNavigate, onLogout, token }) {
               <span style={styles.sidebarIcon}>🧾</span> My Invoices
             </div>
           </div>
-          <div
-            className="logout-btn"
-            style={styles.logoutItem}
-            onClick={handleLogout}
-          >
+          <div className="logout-btn" style={styles.logoutItem} onClick={handleLogout}>
             <span style={styles.sidebarIcon}>→</span> Logout
           </div>
         </div>
 
-        {/* Main content */}
         <div style={styles.content}>
           {activeTab === 'profile' && (
             <div style={styles.card}>
@@ -79,7 +72,7 @@ export default function Profile({ onNavigate, onLogout, token }) {
             <div style={styles.card}>
               <h2 style={styles.cardTitle}>My Invoices</h2>
               <div style={styles.divider} />
-              <InvoiceList onNavigate={onNavigate} />
+              <InvoiceList onNavigate={onNavigate} token={token} />
             </div>
           )}
         </div>
@@ -88,8 +81,57 @@ export default function Profile({ onNavigate, onLogout, token }) {
   );
 }
 
-function InvoiceList({ onNavigate }) {
-  const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+function ConfirmModal({ onConfirm, onCancel }) {
+  return (
+    <div style={styles.modalOverlay}>
+      <div style={styles.modalBox}>
+        <div style={styles.modalIcon}>🗑️</div>
+        <h2 style={styles.modalTitle}>Delete Invoice</h2>
+        <p style={styles.modalText}>Are you sure you want to delete this invoice?</p>
+        <p style={styles.modalSubText}>This cannot be undone.</p>
+        <div style={styles.modalButtons}>
+          <button style={styles.modalNo} onClick={onCancel}>No, keep it</button>
+          <button style={styles.modalYes} onClick={onConfirm}>Yes, delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceList({ onNavigate, token }) {
+  const decoded = jwtDecode(token);
+  const userKey = `invoices_${decoded.userId}`;
+
+  const [invoices, setInvoices] = useState(JSON.parse(localStorage.getItem(userKey) || '[]'));
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [error, setError] = useState('');
+
+  async function handleDelete(invoiceId) {
+    setDeletingId(invoiceId);
+    setConfirmId(null);
+    setError('');
+    try {
+      const res = await fetch(`http://localhost:3000/invoices/${invoiceId}`, {
+        method: 'DELETE',
+        headers: { token },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete invoice.');
+      }
+
+      const updated = invoices.filter(inv => inv.id !== invoiceId);
+      localStorage.setItem(userKey, JSON.stringify(updated));
+      setInvoices(updated);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (invoices.length === 0) {
     return (
@@ -102,13 +144,31 @@ function InvoiceList({ onNavigate }) {
 
   return (
     <div>
+      {confirmId && (
+        <ConfirmModal
+          onConfirm={() => handleDelete(confirmId)}
+          onCancel={() => setConfirmId(null)}
+        />
+      )}
+      {error && <div style={styles.errorBox}>{error}</div>}
       {invoices.map((inv, i) => (
         <div key={i} style={styles.invoiceRow}>
           <div>
             <p style={styles.invoiceCustomer}>{inv.customer || 'Unknown customer'}</p>
             <p style={styles.invoiceDate}>{inv.createdAt}</p>
+            <p style={styles.invoiceId}>{inv.id}</p>
           </div>
-          <span style={styles.invoiceId}>{inv.id}</span>
+          <button
+            style={{
+              ...styles.deleteBtn,
+              opacity: deletingId === inv.id ? 0.5 : 1,
+              cursor: deletingId === inv.id ? 'not-allowed' : 'pointer',
+            }}
+            onClick={() => setConfirmId(inv.id)}
+            disabled={deletingId === inv.id}
+          >
+            {deletingId === inv.id ? 'Deleting...' : 'Delete'}
+          </button>
         </div>
       ))}
     </div>
@@ -133,17 +193,13 @@ const styles = {
     cursor: 'pointer', userSelect: 'none', paddingBottom: 2, borderBottom: '2px solid transparent',
   },
   navLinkActive: { color: '#ffffff', borderBottom: '2px solid rgba(255,255,255,0.6)' },
-  body: {
-    flex: 1, display: 'flex',
-  },
+  body: { flex: 1, display: 'flex' },
   sidebar: {
     width: 220, background: 'rgba(0,0,0,0.3)', borderRight: '1px solid rgba(255,255,255,0.08)',
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
     padding: '24px 12px',
   },
-  sidebarTop: {
-    display: 'flex', flexDirection: 'column', gap: 4,
-  },
+  sidebarTop: { display: 'flex', flexDirection: 'column', gap: 4 },
   sidebarItem: {
     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
     borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.5)',
@@ -159,9 +215,7 @@ const styles = {
     borderRadius: 8, cursor: 'pointer', color: 'rgba(255,255,255,0.4)',
     fontSize: '0.95rem', fontWeight: 500, transition: 'background 0.15s, color 0.15s',
   },
-  content: {
-    flex: 1, padding: '40px 48px',
-  },
+  content: { flex: 1, padding: '40px 48px' },
   card: {
     background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 16, padding: '32px', maxWidth: 600,
@@ -189,5 +243,40 @@ const styles = {
   },
   invoiceCustomer: { margin: 0, color: '#ffffff', fontSize: '0.95rem', fontWeight: 500 },
   invoiceDate: { margin: '4px 0 0', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' },
-  invoiceId: { fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' },
+  invoiceId: { margin: '4px 0 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' },
+  deleteBtn: {
+    padding: '0.45rem 1rem', background: 'rgba(255,80,80,0.1)', color: '#ff6b6b',
+    border: '1px solid rgba(255,80,80,0.25)', borderRadius: 7, fontSize: '0.85rem',
+    fontWeight: 600, flexShrink: 0,
+  },
+  errorBox: {
+    marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+    background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.25)',
+    color: '#ff6b6b', fontSize: '0.85rem',
+  },
+  modalOverlay: {
+    position: 'fixed', inset: 0, zIndex: 100,
+    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  modalBox: {
+    background: 'rgba(10,15,30,0.95)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 16, padding: '40px 36px', maxWidth: 380, width: '100%',
+    textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+  },
+  modalIcon: { fontSize: 36, marginBottom: 16 },
+  modalTitle: { margin: '0 0 10px', fontSize: '1.3rem', fontWeight: 600, color: '#ffffff' },
+  modalText: { margin: '0 0 6px', fontSize: '0.95rem', color: 'rgba(255,255,255,0.6)' },
+  modalSubText: { margin: '0 0 28px', fontSize: '0.82rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' },
+  modalButtons: { display: 'flex', gap: 12 },
+  modalNo: {
+    flex: 1, padding: '0.7rem', borderRadius: 8, fontSize: '0.95rem', fontWeight: 600,
+    cursor: 'pointer', background: 'rgba(255,80,80,0.12)', color: '#ff6b6b',
+    border: '1px solid rgba(255,80,80,0.3)',
+  },
+  modalYes: {
+    flex: 1, padding: '0.7rem', borderRadius: 8, fontSize: '0.95rem', fontWeight: 600,
+    cursor: 'pointer', background: 'rgba(0,200,100,0.15)', color: '#00e891',
+    border: '1px solid rgba(0,200,100,0.3)',
+  },
 };
