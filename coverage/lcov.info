@@ -65,8 +65,8 @@ DA:81,4
 DA:82,2
 DA:85,2
 LF:39
-LH:31
-BRDA:8,0,0,6
+LH:39
+BRDA:8,0,0,7
 BRDA:8,0,1,0
 BRDA:11,1,0,4
 BRDA:11,1,1,40
@@ -87,7 +87,7 @@ BRDA:69,8,1,65
 BRDA:81,9,0,2
 BRDA:81,9,1,2
 BRF:20
-BRH:12
+BRH:19
 end_of_record
 TN:
 SF:invoice-deletion\invoiceDeletion.ts
