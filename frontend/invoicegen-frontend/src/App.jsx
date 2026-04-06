@@ -4,7 +4,6 @@ import Homepage from './pages/Homepage';
 import InvoiceForm from './pages/InvoiceForm';
 import Retrieve from './pages/Retrieval';
 import Profile from './pages/Profile';
-import UpdateInvoice from './pages/UpdateInvoice';
 
 function App() {
   const [page, setPage] = useState('home');
