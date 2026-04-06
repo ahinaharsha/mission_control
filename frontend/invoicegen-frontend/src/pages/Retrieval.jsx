@@ -210,6 +210,7 @@ export default function Retrieval({ onNavigate, token }) {
           {token ? (
             <>
               <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>Create Invoice</span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('update')}>Update Invoice</span>
               <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('profile')}>Profile</span>
             </>
           ) : (
