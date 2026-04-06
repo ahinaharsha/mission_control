@@ -93,17 +93,23 @@ export default function Profile({ onNavigate, onLogout, token }) {
         @keyframes statusPop { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
       `}</style>
 
+      <style>{`
+        .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .page-fade { animation: fadeIn 0.5s ease forwards; }
+      `}</style>
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
           <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
           <span className="nav-link" style={styles.navLink} onClick={() => setShowTrack(true)}>Track</span>
           <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>Create Invoice</span>
+          <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('update')}>Update Invoice</span>
           <span style={{ ...styles.navLink, ...styles.navLinkActive }}>Profile</span>
         </div>
       </nav>
 
-      <div style={styles.body}>
+      <div className="page-fade" style={styles.body}>
         <div style={styles.sidebar}>
           <div style={styles.sidebarTop}>
             <div
