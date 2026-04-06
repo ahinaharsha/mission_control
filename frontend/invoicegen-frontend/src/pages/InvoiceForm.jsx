@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createInvoice } from '../api/client';
 import { buildOrderXML } from '../utils/xmlBuilder';
+import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/MCInvoicing_White.png';
 
 const emptyAddress = { street: '', city: '', postcode: '', country: '' };
@@ -80,13 +81,37 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(''); setResult(null); setLoading(true);
+
+    const validationErrors = [];
+
+    if (!/^\d+$/.test(form.from.abnNumber)) {
+      validationErrors.push('ABN Number must contain numbers only.');
+    }
+    if (!/^\d+$/.test(form.from.address.postcode)) {
+      validationErrors.push('Your postcode must contain numbers only.');
+    }
+    if (!/^\d+$/.test(form.customer.billingAddress.postcode)) {
+      validationErrors.push('Customer postcode must contain numbers only.');
+    }
+    if (!/^\d+$/.test(form.customer.phone)) {
+      validationErrors.push('Phone number must contain numbers only.');
+    }
+
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('\n'));
+      setLoading(false);
+      return;
+    }
+
     try {
       const xml = buildOrderXML(form);
       const data = await createInvoice(xml, token);
       if (data.invoiceId) {
-        const saved = JSON.parse(localStorage.getItem('invoices') || '[]');
+        const decoded = jwtDecode(token);
+        const userKey = `invoices_${decoded.userId}`;
+        const saved = JSON.parse(localStorage.getItem(userKey) || '[]');
         saved.unshift({ id: data.invoiceId, customer: form.customer.fullName, createdAt: new Date().toLocaleDateString() });
-        localStorage.setItem('invoices', JSON.stringify(saved));
+        localStorage.setItem(userKey, JSON.stringify(saved));
       }
       setResult(data);
     } catch (err) {
@@ -211,18 +236,36 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
               <div style={s.grid2}>
                 <div>
                   <label style={s.label}>Currency</label>
-                  <select style={s.input} value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
-                    <option value="AUD">AUD</option>
-                    <option value="USD">USD</option>
-                    <option value="GBP">GBP</option>
-                    <option value="EUR">EUR</option>
-                    <option value="NZD">NZD</option>
-                  </select>
+                  <div style={s.selectWrapper}>
+                    <select style={s.select} value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
+                      <option value="AUD" style={{ background: '#0a0f1e' }}>AUD</option>
+                      <option value="USD" style={{ background: '#0a0f1e' }}>USD</option>
+                      <option value="GBP" style={{ background: '#0a0f1e' }}>GBP</option>
+                      <option value="EUR" style={{ background: '#0a0f1e' }}>EUR</option>
+                      <option value="NZD" style={{ background: '#0a0f1e' }}>NZD</option>
+                    </select>
+                    <span style={s.selectArrow}>▾</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {error && <div style={s.errorBox}>{error}</div>}
+            {error && (
+              <div style={s.errorBox}>
+                {(() => {
+                  try {
+                    const parsed = JSON.parse(error);
+                    if (Array.isArray(parsed)) {
+                      return parsed.map((e, i) => <div key={i}>{e.message}</div>);
+                    }
+                    return error;
+                  } catch {
+                    return error.split('\n').map((msg, i) => <div key={i}>{msg}</div>);
+                  }
+                })()}
+              </div>
+            )}
+
             <button type="submit" style={s.submitBtn} disabled={loading}>
               {loading ? 'Generating...' : '🧾 Generate Invoice'}
             </button>
@@ -280,6 +323,21 @@ const s = {
     borderRadius: 7, fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none',
     background: 'rgba(255,255,255,0.06)', color: '#ffffff',
   },
+  selectWrapper: {
+    position: 'relative', display: 'inline-block', width: '100%',
+  },
+  select: {
+    width: '100%', padding: '0.55rem 2.2rem 0.55rem 0.75rem',
+    border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7,
+    fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none',
+    background: 'rgba(15,20,40,0.95)', color: '#ffffff', cursor: 'pointer',
+    appearance: 'none', WebkitAppearance: 'none',
+  },
+  selectArrow: {
+    position: 'absolute', right: '0.75rem', top: '50%',
+    transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.45)',
+    pointerEvents: 'none', fontSize: '1rem',
+  },
   lineItemRow: { display: 'flex', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '0.75rem', flexWrap: 'wrap' },
   removeBtn: {
     padding: '0.55rem 0.75rem', background: 'rgba(255,80,80,0.1)', color: '#ff6b6b',
@@ -307,7 +365,7 @@ const s = {
   errorBox: {
     width: '100%', maxWidth: 860, color: '#ff6b6b', background: 'rgba(255,80,80,0.1)',
     padding: '0.75rem', borderRadius: 8, marginBottom: '1rem',
-    border: '1px solid rgba(255,80,80,0.25)',
+    border: '1px solid rgba(255,80,80,0.25)', display: 'flex', flexDirection: 'column', gap: '4px',
   },
   card: {
     background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
