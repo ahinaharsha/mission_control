@@ -1,9 +1,9 @@
-import request from 'sync-request-curl';
-import pool from '../datastore'
+import request from 'supertest';
+import pool from '../../AWS/datastore';
 import { HttpError } from '../../class';
 import { authRegister, authLogin, authLogout, authenticate } from './auth';
 import { describe, expect, test, afterAll, beforeEach } from '@jest/globals';
-const SERVER_URL = 'http://localhost:3000';
+import { app } from '../../server';
 
 beforeEach(async () => {
   await pool.query('DELETE FROM invoices');
@@ -15,46 +15,44 @@ afterAll(async () => {
 }, 30000);
 
 describe('POST /auth/register', () => {
-  test('Successful registration', () => {
-    const result = request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    expect(result.statusCode).toStrictEqual(201);
+  test('Successful registration', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    expect(res.statusCode).toStrictEqual(201);
   });
 
-  test('Missing email', () => {
-    const result = request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: '', password: 'correctpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(400);
+  test('Missing email', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ email: '', password: 'correctpassword123' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(400);
   });
 
-  test('Missing password', () => {
-    const result = request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: '' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(400);
+  test('Missing password', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: '' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(400);
   });
 
-  test('Email already in use', () => {
-    request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const result = request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(400);
+  test('Email already in use', async () => {
+    await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    const res = await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(400);
   });
+
   test('Registered user is stored in database', async () => {
-    request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
+    await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const result = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       ['test@gmail.com']
@@ -80,46 +78,42 @@ describe('authRegister direct', () => {
 });
 
 describe('POST /auth/login', () => {
-  test('Correct login info', () => {
-    request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const result = request('POST', `${SERVER_URL}/auth/login`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ token: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(200);
+  test('Correct login info', async () => {
+    await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    expect(res.body).toStrictEqual({ token: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(200);
   });
 
-  test('Email does not exist', () => {
-    const result = request('POST', `${SERVER_URL}/auth/login`, {
-      json: { email: 'wrong@gmail.com', password: 'correctpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(401);
+  test('Email does not exist', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ email: 'wrong@gmail.com', password: 'correctpassword123' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(401);
   });
 
-  test('Password is incorrect', () => {
-    request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const result = request('POST', `${SERVER_URL}/auth/login`, {
-      json: { email: 'test@gmail.com', password: 'wrongpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(401);
+  test('Password is incorrect', async () => {
+    await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ email: 'test@gmail.com', password: 'wrongpassword123' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(401);
   });
 
-  test('Missing email', () => {
-    const result = request('POST', `${SERVER_URL}/auth/login`, {
-      json: { email: '', password: 'correctpassword123' }
-    });
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(400);
+  test('Missing email', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .send({ email: '', password: 'correctpassword123' });
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(400);
   });
 
   test('missing email throws HttpError', async () => {
@@ -143,25 +137,25 @@ describe('authLogin direct', () => {
 });
 
 describe('POST /auth/logout', () => {
-  test('Successful logout', () => {
-    request('POST', `${SERVER_URL}/auth/register`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const loginResult = request('POST', `${SERVER_URL}/auth/login`, {
-      json: { email: 'test@gmail.com', password: 'correctpassword123' }
-    });
-    const { token } = JSON.parse(loginResult.body.toString());
-    const result = request('POST', `${SERVER_URL}/auth/logout`, {
-      headers: { token }
-    });
-    expect(result.statusCode).toStrictEqual(200);
+  test('Successful logout', async () => {
+    await request(app)
+      .post('/auth/register')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    const loginRes = await request(app)
+      .post('/auth/login')
+      .send({ email: 'test@gmail.com', password: 'correctpassword123' });
+    const { token } = loginRes.body;
+    const res = await request(app)
+      .post('/auth/logout')
+      .set('token', token);
+    expect(res.statusCode).toStrictEqual(200);
   });
 
-  test('No token provided', () => {
-    const result = request('POST', `${SERVER_URL}/auth/logout`, {});
-    const body = JSON.parse(result.body.toString());
-    expect(body).toStrictEqual({ error: expect.any(String) });
-    expect(result.statusCode).toStrictEqual(401);
+  test('No token provided', async () => {
+    const res = await request(app)
+      .post('/auth/logout');
+    expect(res.body).toStrictEqual({ error: expect.any(String) });
+    expect(res.statusCode).toStrictEqual(401);
   });
 
   test('missing token throws HttpError', async () => {
