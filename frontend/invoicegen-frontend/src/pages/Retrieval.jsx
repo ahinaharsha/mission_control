@@ -1,12 +1,107 @@
 import { useState, useEffect, useRef } from 'react';
 import logo from '../assets/MCInvoicing_White.png';
 
+const STATUS_META = {
+  Generated:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: '📄' },
+  InProgress: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  icon: '🔄' },
+  Sent:       { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  icon: '📨' },
+  Paid:       { color: '#00e891', bg: 'rgba(0,232,145,0.12)',   icon: '✅' },
+  Overdue:    { color: '#f87171', bg: 'rgba(248,113,113,0.12)', icon: '⚠️' },
+  Deleted:    { color: '#6b7280', bg: 'rgba(107,114,128,0.12)', icon: '🗑️' },
+};
+
+function TrackModal({ token, onClose }) {
+  const [invoiceId, setInvoiceId] = useState('');
+  const [status, setStatus] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const overlayRef = useRef(null);
+
+  const handleTrack = async () => {
+    if (!invoiceId.trim()) { setError('Please enter an Invoice ID.'); return; }
+    setLoading(true); setError(''); setStatus(null);
+    try {
+      const res = await fetch(`/invoices/${invoiceId.trim()}/status`, { headers: { token } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Error ${res.status}`);
+      }
+      const data = await res.json();
+      setStatus(data.status ?? data);
+    } catch (err) {
+      setError(err.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const meta = status ? STATUS_META[status] ?? { color: '#fff', bg: 'rgba(255,255,255,0.08)', icon: '❓' } : null;
+
+  return (
+    <div ref={overlayRef} style={tm.overlay} onClick={e => e.target === overlayRef.current && onClose()}>
+      <div style={tm.card}>
+        <button style={tm.closeBtn} onClick={onClose}>✕</button>
+        <div style={tm.iconWrap}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <h2 style={tm.title}>Track Invoice</h2>
+        <p style={tm.subtitle}>Enter your Invoice ID to check its current status.</p>
+        <div style={tm.inputRow}>
+          <input style={tm.input} placeholder="e.g. INV-00123" value={invoiceId}
+            onChange={e => { setInvoiceId(e.target.value); setError(''); setStatus(null); }}
+            onKeyDown={e => e.key === 'Enter' && handleTrack()} />
+          <button style={{ ...tm.btn, opacity: loading ? 0.7 : 1 }} onClick={handleTrack} disabled={loading}>
+            {loading ? '…' : 'Check'}
+          </button>
+        </div>
+        {error && <div style={tm.error}>{error}</div>}
+        {status && meta && (
+          <div style={{ ...tm.statusCard, background: meta.bg, borderColor: `${meta.color}33` }}>
+            <span style={{ fontSize: '1.8rem' }}>{meta.icon}</span>
+            <div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginBottom: 4 }}>Current status</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', color: meta.color }}>{status}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LoginPromptModal({ onClose, onNavigate }) {
+  const overlayRef = useRef(null);
+  return (
+    <div ref={overlayRef} style={tm.overlay} onClick={e => e.target === overlayRef.current && onClose()}>
+      <div style={tm.card}>
+        <button style={tm.closeBtn} onClick={onClose}>✕</button>
+        <div style={tm.iconWrap}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </div>
+        <h2 style={tm.title}>Login required</h2>
+        <p style={tm.subtitle}>You must be logged in to track an invoice.</p>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+          <button style={{ ...tm.btn, flex: 1 }} onClick={() => { onClose(); onNavigate('login'); }}>Login</button>
+          <button style={{ ...tm.btn, flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+            onClick={() => { onClose(); onNavigate('register'); }}>Register</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Retrieval({ onNavigate, token }) {
   const [invoiceId, setInvoiceId] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showXml, setShowXml] = useState(false);
+  const [showTrack, setShowTrack] = useState(false);
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -15,7 +110,7 @@ export default function Retrieval({ onNavigate, token }) {
 
     function resize() {
       canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight; // always viewport height, never page height
+      canvas.height = window.innerHeight;
     }
 
     resize();
@@ -77,32 +172,17 @@ export default function Retrieval({ onNavigate, token }) {
   }, []);
 
   async function handleRetrieve() {
-    if (!invoiceId.trim()) {
-      setError('Please enter an invoice ID.');
-      return;
-    }
+    if (!invoiceId.trim()) { setError('Please enter an invoice ID.'); return; }
+    if (!token) { setError('You must be logged in to retrieve an invoice.'); return; }
 
-    if (!token) {
-      setError('You must be logged in to retrieve an invoice.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setResult(null);
-    setShowXml(false);
+    setLoading(true); setError(''); setResult(null); setShowXml(false);
 
     try {
       const res = await fetch(`http://localhost:3000/invoices/${invoiceId.trim()}`, {
         headers: { token },
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invoice not found.');
-      }
-
+      if (!res.ok) throw new Error(data.error || 'Invoice not found.');
       setResult(data);
     } catch (err) {
       setError(err.message);
@@ -119,34 +199,23 @@ export default function Retrieval({ onNavigate, token }) {
         .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-fade { animation: fadeIn 0.5s ease forwards; }
+        @keyframes modalIn { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
       `}</style>
 
       <nav style={styles.nav}>
-        <img
-          src={logo}
-          alt="MC Invoicing"
-          style={{ ...styles.logo, cursor: 'pointer' }}
-          onClick={() => onNavigate('home')}
-        />
+        <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
           <span style={{ ...styles.navLink, ...styles.navLinkActive }}>Retrieve</span>
+          <span className="nav-link" style={styles.navLink} onClick={() => token ? setShowTrack(true) : setShowTrack('login')}>Track</span>
           {token ? (
             <>
-              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>
-                Create Invoice
-              </span>
-              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('profile')}>
-                Profile
-              </span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>Create Invoice</span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('profile')}>Profile</span>
             </>
           ) : (
             <>
-              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('login')}>
-                Login
-              </span>
-              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('register')}>
-                Register
-              </span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('login')}>Login</span>
+              <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('register')}>Register</span>
             </>
           )}
         </div>
@@ -160,9 +229,7 @@ export default function Retrieval({ onNavigate, token }) {
           </p>
 
           {!token ? (
-            <button style={styles.button} onClick={() => onNavigate('login')}>
-              Login to continue
-            </button>
+            <button style={styles.button} onClick={() => onNavigate('login')}>Login to continue</button>
           ) : (
             <div style={styles.inputRow}>
               <input
@@ -192,16 +259,9 @@ export default function Retrieval({ onNavigate, token }) {
                 <span
                   style={{
                     ...styles.statusBadge,
-                    background:
-                      result.status === 'Paid'
-                        ? 'rgba(0,255,150,0.12)'
-                        : 'rgba(255,180,0,0.12)',
+                    background: result.status === 'Paid' ? 'rgba(0,255,150,0.12)' : 'rgba(255,180,0,0.12)',
                     color: result.status === 'Paid' ? '#00e891' : '#ffb400',
-                    border: `1px solid ${
-                      result.status === 'Paid'
-                        ? 'rgba(0,255,150,0.3)'
-                        : 'rgba(255,180,0,0.3)'
-                    }`,
+                    border: `1px solid ${result.status === 'Paid' ? 'rgba(0,255,150,0.3)' : 'rgba(255,180,0,0.3)'}`,
                   }}
                 >
                   {result.status}
@@ -222,213 +282,132 @@ export default function Retrieval({ onNavigate, token }) {
               </div>
 
               <div style={styles.field}>
-                <button
-                  type="button"
-                  style={styles.xmlToggle}
-                  onClick={() => setShowXml(prev => !prev)}
-                >
+                <button type="button" style={styles.xmlToggle} onClick={() => setShowXml(prev => !prev)}>
                   {showXml ? 'Hide XML Payload' : 'Show XML Payload'}
                 </button>
-
-                {showXml && (
-                  <pre style={styles.xmlBox}>{result.xml}</pre>
-                )}
+                {showXml && <pre style={styles.xmlBox}>{result.xml}</pre>}
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {showTrack === true && <TrackModal token={token} onClose={() => setShowTrack(false)} />}
+      {showTrack === 'login' && <LoginPromptModal onClose={() => setShowTrack(false)} onNavigate={onNavigate} />}
     </div>
   );
 }
 
+const tm = {
+  overlay: {
+    position: 'fixed', inset: 0, zIndex: 100,
+    background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  card: {
+    position: 'relative', background: 'linear-gradient(160deg, #0d1525 0%, #080f1e 100%)',
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '40px 36px 36px',
+    width: '100%', maxWidth: 420, boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'modalIn 0.3s ease',
+  },
+  closeBtn: {
+    position: 'absolute', top: 16, right: 18, background: 'none', border: 'none',
+    color: 'rgba(255,255,255,0.3)', fontSize: '1rem', cursor: 'pointer',
+  },
+  iconWrap: {
+    width: 52, height: 52, borderRadius: 14, background: 'rgba(79,70,229,0.15)',
+    border: '1px solid rgba(79,70,229,0.3)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', marginBottom: 20,
+  },
+  title: { color: '#fff', fontSize: '1.35rem', fontWeight: 700, margin: '0 0 8px' },
+  subtitle: { color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 28px' },
+  inputRow: { display: 'flex', gap: 10 },
+  input: {
+    flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 10, padding: '11px 16px', color: '#fff', fontSize: '0.95rem', fontFamily: 'inherit',
+  },
+  btn: {
+    background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 20px',
+    fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit',
+  },
+  error: {
+    marginTop: 14, padding: '10px 14px', background: 'rgba(248,113,113,0.1)',
+    border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8, color: '#f87171', fontSize: '0.85rem',
+  },
+  statusCard: {
+    marginTop: 20, padding: '16px 20px', border: '1px solid', borderRadius: 12,
+    display: 'flex', alignItems: 'center', gap: 16,
+  },
+};
+
 const styles = {
   page: {
-    minHeight: '100vh',
-    width: '100%',
-    position: 'relative',
-    overflow: 'hidden',
+    minHeight: '100vh', width: '100%', position: 'relative', overflow: 'hidden',
     background: 'linear-gradient(180deg, #030810 0%, #060e18 35%, #040a14 100%)',
-    display: 'flex',
-    flexDirection: 'column',
+    display: 'flex', flexDirection: 'column',
   },
   canvas: {
-    position: 'fixed', 
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    pointerEvents: 'none',
-    zIndex: 0,
-    filter: 'blur(32px) brightness(0.9)',
-    opacity: 0.85,
+    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+    pointerEvents: 'none', zIndex: 0, filter: 'blur(32px) brightness(0.9)', opacity: 0.85,
   },
   nav: {
-    position: 'relative',
-    zIndex: 1,
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 32px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-    background: 'rgba(255,255,255,0.05)',
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    boxSizing: 'border-box',
+    position: 'relative', zIndex: 1, width: '100%', display: 'flex', alignItems: 'center',
+    justifyContent: 'space-between', padding: '10px 32px',
+    borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxSizing: 'border-box',
   },
   logo: { height: 60 },
   navLinks: { display: 'flex', gap: 32, alignItems: 'center' },
   navLink: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: '0.95rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    userSelect: 'none',
-    paddingBottom: 2,
-    borderBottom: '2px solid transparent',
+    color: 'rgba(255,255,255,0.45)', fontSize: '0.95rem', fontWeight: 500,
+    cursor: 'pointer', userSelect: 'none', paddingBottom: 2, borderBottom: '2px solid transparent',
   },
-  navLinkActive: {
-    color: '#ffffff',
-    borderBottom: '2px solid rgba(255,255,255,0.6)',
-  },
+  navLinkActive: { color: '#ffffff', borderBottom: '2px solid rgba(255,255,255,0.6)' },
   container: {
-    position: 'relative',
-    zIndex: 1,
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '48px 24px',
+    position: 'relative', zIndex: 1, flex: 1,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 24px',
   },
   card: {
-    width: '100%',
-    maxWidth: 560,
-    background: 'rgba(0,0,0,0.35)',
-    border: '1px solid rgba(255,255,255,0.18)',
-    borderRadius: 16,
-    padding: '40px 36px',
+    width: '100%', maxWidth: 560, background: 'rgba(0,0,0,0.35)',
+    border: '1px solid rgba(255,255,255,0.18)', borderRadius: 16, padding: '40px 36px',
   },
-  title: {
-    margin: '0 0 8px',
-    fontSize: '1.6rem',
-    fontWeight: 600,
-    color: '#ffffff',
-  },
-  subtitle: {
-    margin: '0 0 28px',
-    fontSize: '0.95rem',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  inputRow: {
-    display: 'flex',
-    gap: 10,
-  },
+  title: { margin: '0 0 8px', fontSize: '1.6rem', fontWeight: 600, color: '#ffffff' },
+  subtitle: { margin: '0 0 28px', fontSize: '0.95rem', color: 'rgba(255,255,255,0.5)' },
+  inputRow: { display: 'flex', gap: 10 },
   input: {
-    flex: 1,
-    padding: '0.65rem 1rem',
-    borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.15)',
-    background: 'rgba(255,255,255,0.06)',
-    color: '#ffffff',
-    fontSize: '0.95rem',
-    outline: 'none',
+    flex: 1, padding: '0.65rem 1rem', borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
+    color: '#ffffff', fontSize: '0.95rem', outline: 'none',
   },
   button: {
-    padding: '0.65rem 1.4rem',
-    borderRadius: 8,
-    border: 'none',
-    background: '#4f46e5',
-    color: '#ffffff',
-    fontSize: '0.95rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
+    padding: '0.65rem 1.4rem', borderRadius: 8, border: 'none', background: '#4f46e5',
+    color: '#ffffff', fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
   },
   errorBox: {
-    marginTop: 16,
-    padding: '12px 16px',
-    borderRadius: 8,
-    background: 'rgba(255,80,80,0.1)',
-    border: '1px solid rgba(255,80,80,0.25)',
-    color: '#ff6b6b',
-    fontSize: '0.9rem',
+    marginTop: 16, padding: '12px 16px', borderRadius: 8,
+    background: 'rgba(255,80,80,0.1)', border: '1px solid rgba(255,80,80,0.25)',
+    color: '#ff6b6b', fontSize: '0.9rem',
   },
   resultCard: {
-    marginTop: 24,
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    padding: '20px 24px',
+    marginTop: 24, background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '20px 24px',
   },
-  resultHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  resultLabel: {
-    fontSize: '0.85rem',
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-  },
-  statusBadge: {
-    padding: '4px 12px',
-    borderRadius: 999,
-    fontSize: '0.8rem',
-    fontWeight: 500,
-  },
-  divider: {
-    height: 1,
-    background: 'rgba(255,255,255,0.07)',
-    marginBottom: 16,
-  },
-  fieldGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 16,
-    marginBottom: 16,
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    marginBottom: 8,
-  },
-  fieldLabel: {
-    fontSize: '0.78rem',
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.07em',
-  },
-  fieldValue: {
-    fontSize: '0.95rem',
-    color: '#ffffff',
-    wordBreak: 'break-all',
-  },
+  resultHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  resultLabel: { fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' },
+  statusBadge: { padding: '4px 12px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 500 },
+  divider: { height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 16 },
+  fieldGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 },
+  field: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 },
+  fieldLabel: { fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.07em' },
+  fieldValue: { fontSize: '0.95rem', color: '#ffffff', wordBreak: 'break-all' },
   xmlToggle: {
-    alignSelf: 'flex-start',
-    padding: '0.55rem 1rem',
-    borderRadius: 8,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(255,255,255,0.05)',
-    color: '#ffffff',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
+    alignSelf: 'flex-start', padding: '0.55rem 1rem', borderRadius: 8,
+    border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)',
+    color: '#ffffff', fontSize: '0.9rem', cursor: 'pointer',
   },
   xmlBox: {
-    marginTop: 6,
-    padding: '12px 14px',
-    borderRadius: 8,
-    background: 'rgba(0,0,0,0.3)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: '0.78rem',
-    overflowX: 'auto',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word',
-    fontFamily: 'monospace',
-    lineHeight: 1.6,
+    marginTop: 6, padding: '12px 14px', borderRadius: 8, background: 'rgba(0,0,0,0.3)',
+    border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)',
+    fontSize: '0.78rem', overflowX: 'auto', whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word', fontFamily: 'monospace', lineHeight: 1.6,
   },
 };
