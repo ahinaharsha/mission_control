@@ -1,11 +1,82 @@
 // Profile.jsx
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/MCInvoicing_White.png';
 import { logout } from '../api/client';
 
+const STATUS_META = {
+  Generated:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: '📄' },
+  InProgress: { color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  icon: '🔄' },
+  Sent:       { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  icon: '📨' },
+  Paid:       { color: '#00e891', bg: 'rgba(0,232,145,0.12)',   icon: '✅' },
+  Overdue:    { color: '#f87171', bg: 'rgba(248,113,113,0.12)', icon: '⚠️' },
+  Deleted:    { color: '#6b7280', bg: 'rgba(107,114,128,0.12)', icon: '🗑️' },
+};
+
+function TrackModal({ token, onClose }) {
+  const [invoiceId, setInvoiceId] = useState('');
+  const [status, setStatus] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const overlayRef = useRef(null);
+
+  const handleTrack = async () => {
+    if (!invoiceId.trim()) { setError('Please enter an Invoice ID.'); return; }
+    setLoading(true); setError(''); setStatus(null);
+    try {
+      const res = await fetch(`/invoices/${invoiceId.trim()}/status`, { headers: { token } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Error ${res.status}`);
+      }
+      const data = await res.json();
+      setStatus(data.status ?? data);
+    } catch (err) {
+      setError(err.message || 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const meta = status ? STATUS_META[status] ?? { color: '#fff', bg: 'rgba(255,255,255,0.08)', icon: '❓' } : null;
+
+  return (
+    <div ref={overlayRef} style={tm.overlay} onClick={e => e.target === overlayRef.current && onClose()}>
+      <div style={tm.card}>
+        <button style={tm.closeBtn} onClick={onClose}>✕</button>
+        <div style={tm.iconWrap}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+        <h2 style={tm.title}>Track Invoice</h2>
+        <p style={tm.subtitle}>Enter your Invoice ID to check its current status.</p>
+        <div style={tm.inputRow}>
+          <input style={tm.input} placeholder="e.g. INV-00123" value={invoiceId}
+            onChange={e => { setInvoiceId(e.target.value); setError(''); setStatus(null); }}
+            onKeyDown={e => e.key === 'Enter' && handleTrack()} />
+          <button style={{ ...tm.btn, opacity: loading ? 0.7 : 1 }} onClick={handleTrack} disabled={loading}>
+            {loading ? '…' : 'Check'}
+          </button>
+        </div>
+        {error && <div style={tm.error}>{error}</div>}
+        {status && meta && (
+          <div style={{ ...tm.statusCard, background: meta.bg, borderColor: `${meta.color}33` }}>
+            <span style={{ fontSize: '1.8rem' }}>{meta.icon}</span>
+            <div>
+              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginBottom: 4 }}>Current status</div>
+              <div style={{ fontWeight: 700, fontSize: '1.1rem', color: meta.color }}>{status}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Profile({ onNavigate, onLogout, token }) {
   const [activeTab, setActiveTab] = useState('profile');
+  const [showTrack, setShowTrack] = useState(false);
 
   async function handleLogout() {
     try { await logout(token); } catch (_) {}
@@ -18,12 +89,15 @@ export default function Profile({ onNavigate, onLogout, token }) {
         .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
         .sidebar-item:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.9) !important; }
         .logout-btn:hover { background: rgba(255,80,80,0.15) !important; color: #ff6b6b !important; }
+        @keyframes modalIn { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes statusPop { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
       `}</style>
 
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
           <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
+          <span className="nav-link" style={styles.navLink} onClick={() => setShowTrack(true)}>Track</span>
           <span className="nav-link" style={styles.navLink} onClick={() => onNavigate('app')}>Create Invoice</span>
           <span style={{ ...styles.navLink, ...styles.navLinkActive }}>Profile</span>
         </div>
@@ -77,6 +151,8 @@ export default function Profile({ onNavigate, onLogout, token }) {
           )}
         </div>
       </div>
+
+      {showTrack && <TrackModal token={token} onClose={() => setShowTrack(false)} />}
     </div>
   );
 }
@@ -174,6 +250,47 @@ function InvoiceList({ onNavigate, token }) {
     </div>
   );
 }
+
+const tm = {
+  overlay: {
+    position: 'fixed', inset: 0, zIndex: 100,
+    background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  card: {
+    position: 'relative', background: 'linear-gradient(160deg, #0d1525 0%, #080f1e 100%)',
+    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '40px 36px 36px',
+    width: '100%', maxWidth: 420, boxShadow: '0 32px 80px rgba(0,0,0,0.6)', animation: 'modalIn 0.3s ease',
+  },
+  closeBtn: {
+    position: 'absolute', top: 16, right: 18, background: 'none', border: 'none',
+    color: 'rgba(255,255,255,0.3)', fontSize: '1rem', cursor: 'pointer',
+  },
+  iconWrap: {
+    width: 52, height: 52, borderRadius: 14, background: 'rgba(79,70,229,0.15)',
+    border: '1px solid rgba(79,70,229,0.3)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', marginBottom: 20,
+  },
+  title: { color: '#fff', fontSize: '1.35rem', fontWeight: 700, margin: '0 0 8px' },
+  subtitle: { color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem', lineHeight: 1.6, margin: '0 0 28px' },
+  inputRow: { display: 'flex', gap: 10 },
+  input: {
+    flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 10, padding: '11px 16px', color: '#fff', fontSize: '0.95rem', fontFamily: 'inherit',
+  },
+  btn: {
+    background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 20px',
+    fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit',
+  },
+  error: {
+    marginTop: 14, padding: '10px 14px', background: 'rgba(248,113,113,0.1)',
+    border: '1px solid rgba(248,113,113,0.25)', borderRadius: 8, color: '#f87171', fontSize: '0.85rem',
+  },
+  statusCard: {
+    marginTop: 20, padding: '16px 20px', border: '1px solid', borderRadius: 12,
+    display: 'flex', alignItems: 'center', gap: 16,
+  },
+};
 
 const styles = {
   page: {
