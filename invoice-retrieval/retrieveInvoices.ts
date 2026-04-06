@@ -11,7 +11,7 @@ export async function retrieveInvoices(invoiceId: string, token: string | undefi
   const userId = decoded.userId;
 
   const result = await pool.query(
-    'SELECT invoiceId, userId, invoiceXML as xml, status FROM invoices WHERE invoiceId = $1',
+    'SELECT invoiceId, userId, invoiceXML as xml, invoiceData, status FROM invoices WHERE invoiceId = $1',
     [invoiceId]
   );
 
@@ -29,6 +29,7 @@ export async function retrieveInvoices(invoiceId: string, token: string | undefi
     invoiceId: invoice.invoiceid,
     userId: invoice.userid,
     xml: invoice.xml,
+    invoicedata: invoice.invoicedata,
     status: invoice.status
   };
 }
