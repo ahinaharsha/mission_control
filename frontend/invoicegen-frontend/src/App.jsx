@@ -4,6 +4,7 @@ import Homepage from './pages/Homepage';
 import InvoiceForm from './pages/InvoiceForm';
 import Retrieve from './pages/Retrieval';
 import Profile from './pages/Profile';
+import UpdateInvoice from './pages/UpdateInvoice';
 
 function App() {
   const [page, setPage] = useState('home');
@@ -28,6 +29,7 @@ function App() {
   if (page === 'profile') return <Profile onNavigate={handleNavigate} onLogout={handleLogout} token={token} />;
   if (page === 'home') return <Homepage onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
   if (page === 'retrieve') return <Retrieve onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;
+  if (page === 'update') return <UpdateInvoice onNavigate={handleNavigate} token={token} />;
   if (page === 'app' && token) return <InvoiceForm token={token} onLogout={handleLogout} onNavigate={handleNavigate} />;
   if (page === 'login' || page === 'register') return <Auth onLogin={handleLogin} initialTab={page} onNavigate={handleNavigate} />;
   return <Homepage onNavigate={handleNavigate} token={token} onLogout={handleLogout} />;

@@ -3,6 +3,7 @@ import { createInvoice } from '../api/client';
 import { buildOrderXML } from '../utils/xmlBuilder';
 import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/MCInvoicing_White.png';
+import { TrackModal, LoginPromptModal, useTrack } from '../components/TrackModal';
 
 const emptyAddress = { street: '', city: '', postcode: '', country: '' };
 
@@ -63,6 +64,7 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [showTrack, setShowTrack] = useState(false);
 
   function setFrom(field, value) { setForm(f => ({ ...f, from: { ...f.from, [field]: value } })); }
   function setFromAddress(field, value) { setForm(f => ({ ...f, from: { ...f.from, address: { ...f.from.address, [field]: value } } })); }
@@ -132,11 +134,17 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
         .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-fade { animation: fadeIn 0.5s ease forwards; }
+        @keyframes modalIn { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes statusPop { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
+        .track-input:focus { outline:none; border-color:rgba(79,70,229,0.7)!important; box-shadow:0 0 0 3px rgba(79,70,229,0.18); }
+        .track-btn:hover:not(:disabled) { background:#4338ca!important; }
+        .track-close:hover { color:rgba(255,255,255,0.8)!important; }
       `}</style>
       <nav style={s.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...s.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={s.navLinks}>
           <span className="nav-link" style={s.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
+          <span className="nav-link" style={s.navLink} onClick={() => token ? setShowTrack(true) : setShowTrack('login')}>Track</span>
           <span style={{ ...s.navLink, ...s.navLinkActive }}>Create Invoice</span>
           <span className="nav-link" style={s.navLink} onClick={() => onNavigate('profile')}>Profile</span>
         </div>
@@ -272,6 +280,9 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
           </form>
         )}
       </div>
+
+      {showTrack === true && <TrackModal token={token} onClose={() => setShowTrack(false)} />}
+      {showTrack === 'login' && <LoginPromptModal onClose={() => setShowTrack(false)} onNavigate={onNavigate} />}
     </div>
   );
 }
@@ -323,9 +334,7 @@ const s = {
     borderRadius: 7, fontSize: '0.95rem', boxSizing: 'border-box', outline: 'none',
     background: 'rgba(255,255,255,0.06)', color: '#ffffff',
   },
-  selectWrapper: {
-    position: 'relative', display: 'inline-block', width: '100%',
-  },
+  selectWrapper: { position: 'relative', display: 'inline-block', width: '100%' },
   select: {
     width: '100%', padding: '0.55rem 2.2rem 0.55rem 0.75rem',
     border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7,
