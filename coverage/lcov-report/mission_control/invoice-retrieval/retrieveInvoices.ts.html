@@ -129,6 +129,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import pool from '../AWS/datastore';
 import { invoiceoutput } from '../interface';
 import { HttpError } from '../class';
@@ -142,7 +143,7 @@ export async function retrieveInvoices(invoiceId: string, token: string | undefi
   const userId = decoded.userId;
 &nbsp;
   const result = await pool.query(
-    'SELECT invoiceId, userId, invoiceXML as xml, status FROM invoices WHERE invoiceId = $1',
+    'SELECT invoiceId, userId, invoiceXML as xml, invoiceData, status FROM invoices WHERE invoiceId = $1',
     [invoiceId]
   );
 &nbsp;
@@ -160,6 +161,7 @@ export async function retrieveInvoices(invoiceId: string, token: string | undefi
     invoiceId: invoice.invoiceid,
     userId: invoice.userid,
     xml: invoice.xml,
+    invoicedata: invoice.invoicedata,
     status: invoice.status
   };
 }</pre></td></tr></table></pre>

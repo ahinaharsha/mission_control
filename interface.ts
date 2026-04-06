@@ -81,4 +81,5 @@ export interface invoiceoutput{
   userId:string;
   xml:string;
   status:string;
+  invoicedata?: any;
 }

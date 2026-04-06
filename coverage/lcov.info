@@ -14,7 +14,7 @@ BRF:0
 BRH:0
 end_of_record
 TN:
-SF:AWS/auth/auth.ts
+SF:AWS\auth\auth.ts
 FN:10,authRegister
 FN:33,authLogin
 FN:68,authenticate
@@ -65,8 +65,8 @@ DA:81,4
 DA:82,2
 DA:85,2
 LF:39
-LH:39
-BRDA:8,0,0,7
+LH:31
+BRDA:8,0,0,6
 BRDA:8,0,1,0
 BRDA:11,1,0,4
 BRDA:11,1,1,40
@@ -87,10 +87,10 @@ BRDA:69,8,1,65
 BRDA:81,9,0,2
 BRDA:81,9,1,2
 BRF:20
-BRH:19
+BRH:12
 end_of_record
 TN:
-SF:invoice-deletion/invoiceDeletion.ts
+SF:invoice-deletion\invoiceDeletion.ts
 FN:9,deleteInvoice
 FNF:1
 FNH:1
@@ -126,7 +126,7 @@ BRF:6
 BRH:6
 end_of_record
 TN:
-SF:invoice-generator/TrackStatus.ts
+SF:invoice-generator\TrackStatus.ts
 FN:8,getText
 FN:21,getStatus
 FN:79,updateStatus
@@ -213,7 +213,7 @@ BRF:22
 BRH:21
 end_of_record
 TN:
-SF:invoice-generator/generateInvoicePDF.ts
+SF:invoice-generator\generateInvoicePDF.ts
 FN:8,getText
 FN:20,safeGet
 FN:21,(anonymous_10)
@@ -397,7 +397,7 @@ BRF:45
 BRH:44
 end_of_record
 TN:
-SF:invoice-generator/generator.ts
+SF:invoice-generator\generator.ts
 FN:13,parseOrderXML
 FN:99,validateInvoiceInput
 FN:131,create_invoice
@@ -639,7 +639,7 @@ BRF:162
 BRH:124
 end_of_record
 TN:
-SF:invoice-retrieval/retrieveInvoices.ts
+SF:invoice-retrieval\retrieveInvoices.ts
 FN:7,retrieveInvoices
 FNF:1
 FNH:1
@@ -669,7 +669,7 @@ BRF:4
 BRH:4
 end_of_record
 TN:
-SF:invoice-update/updateInvoice.ts
+SF:invoice-update\updateInvoice.ts
 FN:10,updateInvoice
 FNF:1
 FNH:1
@@ -737,7 +737,7 @@ BRF:20
 BRH:20
 end_of_record
 TN:
-SF:validationEngine/validation.ts
+SF:validationEngine\validation.ts
 FN:8,validateAddress
 FN:35,validateFromDetails
 FN:46,(anonymous_2)
@@ -910,7 +910,7 @@ BRF:60
 BRH:60
 end_of_record
 TN:
-SF:validationEngine/validationHelpers.ts
+SF:validationEngine\validationHelpers.ts
 FN:1,isNonEmptyString
 FNF:1
 FNH:1

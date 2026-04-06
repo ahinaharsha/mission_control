@@ -146,6 +146,7 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
           <span className="nav-link" style={s.navLink} onClick={() => onNavigate('retrieve')}>Retrieve</span>
           <span className="nav-link" style={s.navLink} onClick={() => token ? setShowTrack(true) : setShowTrack('login')}>Track</span>
           <span style={{ ...s.navLink, ...s.navLinkActive }}>Create Invoice</span>
+          <span className="nav-link" style={s.navLink} onClick={() => onNavigate('update')}>Update Invoice</span>
           <span className="nav-link" style={s.navLink} onClick={() => onNavigate('profile')}>Profile</span>
         </div>
       </nav>
