@@ -75,7 +75,97 @@ export function parseXMLToInvoice(xmlStr) {
   const doc = parser.parseFromString(xmlStr.trim(), 'text/xml');
 
   const parseErr = doc.getElementsByTagName('parsererror');
-  if (parseErr.length > 0) throw new Error('Invalid XML — ' + (parseErr[0].textContent?.split('\n')[0] ?? 'check your markup.'));
+  if (parseErr.length > 0) throw new Error('Invalid XML — check your markup.');
+
+  // Helper: get text by local name, ignoring namespace prefix
+  const byLocal = (parent, localName) => {
+    const all = parent.getElementsByTagName('*');
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].localName === localName) return all[i].textContent?.trim() ?? '';
+    }
+    return '';
+  };
+
+  const byLocalEl = (parent, localName) => {
+    const all = parent.getElementsByTagName('*');
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].localName === localName) return all[i];
+    }
+    return null;
+  };
+
+  // Detect format: MC Invoicing vs UBL
+  const isUBL = !!doc.getElementsByTagName('*')[0]?.namespaceURI;
+
+  if (isUBL) {
+    // ── UBL format ──
+    const buyerEl  = byLocalEl(doc, 'BuyerCustomerParty')  ?? byLocalEl(doc, 'AccountingCustomerParty');
+    const sellerEl = byLocalEl(doc, 'SellerSupplierParty') ?? byLocalEl(doc, 'AccountingSupplierParty');
+
+    const partyName = (partyEl) => {
+      if (!partyEl) return '';
+      return byLocal(partyEl, 'Name');
+    };
+    const partyAddress = (partyEl) => {
+      if (!partyEl) return '';
+      const street = byLocal(partyEl, 'StreetName');
+      const city   = byLocal(partyEl, 'CityName');
+      return [street, city].filter(Boolean).join(', ');
+    };
+    const partyPostcode = (partyEl) => partyEl ? byLocal(partyEl, 'PostalZone') : '';
+    const partyEmail    = (partyEl) => partyEl ? byLocal(partyEl, 'ElectronicMail') : '';
+
+    const items = [];
+    const orderLines = doc.getElementsByTagName('*');
+    for (let i = 0; i < orderLines.length; i++) {
+      const el = orderLines[i];
+      if (el.localName === 'OrderLine' || el.localName === 'InvoiceLine') {
+        const desc = byLocal(el, 'Description') || byLocal(el, 'Name');
+        const qty  = byLocal(el, 'Quantity')    || byLocal(el, 'InvoicedQuantity') || '1';
+        const amt  = byLocal(el, 'LineExtensionAmount') || byLocal(el, 'PriceAmount') || '';
+        const rate = byLocal(el, 'PriceAmount') || amt;
+        if (desc || amt) items.push({ desc, qty, rate, amt });
+      }
+    }
+
+    // Currency
+    const currency = (() => {
+      const all = doc.getElementsByTagName('*');
+      for (let i = 0; i < all.length; i++) {
+        const c = all[i].getAttribute('currencyID');
+        if (c) return c;
+      }
+      return 'AUD';
+    })();
+
+    // Totals
+    const total    = byLocal(doc, 'TaxInclusiveAmount') || byLocal(doc, 'LegalMonetaryTotal') && byLocal(byLocalEl(doc, 'LegalMonetaryTotal'), 'TaxInclusiveAmount') || byLocal(doc, 'PayableAmount') || '';
+    const subtotal = byLocal(doc, 'LineExtensionAmount') || '';
+    const gst      = byLocal(doc, 'TaxAmount') || '';
+
+    return {
+      date:         byLocal(doc, 'IssueDate'),
+      currency,
+      fromName:     partyName(sellerEl),
+      fromEmail:    partyEmail(sellerEl),
+      fromAddress:  partyAddress(sellerEl),
+      fromPostcode: partyPostcode(sellerEl),
+      toName:       partyName(buyerEl),
+      toEmail:      partyEmail(buyerEl),
+      toAddress:    partyAddress(buyerEl),
+      toPostcode:   partyPostcode(buyerEl),
+      subtotal,
+      gst,
+      total,
+      items,
+    };
+  }
+
+  // ── MC Invoicing format ──
+  const getText = (parent, tag) => {
+    const els = parent.getElementsByTagName(tag);
+    return els.length > 0 ? els[0].textContent?.trim() ?? '' : '';
+  };
 
   const billFrom = doc.getElementsByTagName('billFrom')[0] ?? doc;
   const billTo   = doc.getElementsByTagName('billTo')[0]   ?? doc;
