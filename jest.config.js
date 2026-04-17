@@ -15,5 +15,6 @@ module.exports = {
     '!**/server.ts',
     '!**/migrate.ts',
     '!**/setupDB.ts',
+    '!**/migrateAI.ts'
   ],
 };
