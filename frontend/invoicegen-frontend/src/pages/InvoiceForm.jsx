@@ -127,6 +127,24 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
+  async function handleDownloadPDF() {
+  try {
+    const res = await fetch(`/invoices/${result.invoiceId}/pdf`, {
+      headers: { token }
+    });
+      if (!res.ok) throw new Error('Failed to download PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${result.invoiceId}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Could not download PDF: ' + err.message);
+    }
+  }
+
   return (
     <div style={s.page}>
       <SpaceBackground />
@@ -166,10 +184,11 @@ export default function InvoiceForm({ token, onLogout, onNavigate }) {
                 </button>
               </div>
             )}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button style={s.primaryBtn} onClick={() => { setResult(null); setForm(defaultForm); }}>+ Create Another</button>
               <button style={s.secondaryBtn} onClick={() => onNavigate('retrieve')}>🔍 Retrieve Invoice</button>
-            </div>
+              <button style={s.downloadBtn} onClick={() => handleDownloadPDF()}>⬇ Download PDF</button>
+            </div>    
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 860 }}>
@@ -401,5 +420,9 @@ const s = {
     padding: '0.65rem 1.4rem', background: 'rgba(255,255,255,0.06)', color: '#ffffff',
     border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, fontSize: '0.95rem',
     fontWeight: 500, cursor: 'pointer',
+  },
+  downloadBtn: {
+    padding: '0.65rem 1.4rem', background: '#00b86a', color: '#fff',
+    border: 'none', borderRadius: 8, fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer',
   },
 };

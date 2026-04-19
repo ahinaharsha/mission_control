@@ -241,10 +241,9 @@ export function buildAndPrintPDF(inv) {
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:Helvetica,Arial,sans-serif;font-size:10pt;color:#222;background:#fff;padding:50px;}
-  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;}
+  .header{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:32px;}
   .invoice-title{font-size:22pt;font-weight:700;letter-spacing:.02em;color:#111;}
-  .meta-table{font-size:9pt;color:#444;text-align:right;line-height:1.8;}
-  .meta-label{color:#888;}
+  .meta{font-size:9pt;color:#888;margin-top:6px;line-height:1.8;}
   .parties{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:28px;}
   .party-label{font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px;}
   .party-name{font-size:11pt;font-weight:700;color:#111;margin-bottom:2px;}
@@ -261,10 +260,9 @@ export function buildAndPrintPDF(inv) {
 </style></head><body>
   <div class="header">
     <div class="invoice-title">INVOICE</div>
-    <table class="meta-table" style="border:none;">
-      ${inv.date ? `<tr><td class="meta-label">Issue Date:&nbsp;</td><td>${escapeXML(inv.date)}</td></tr>` : ''}
-      <tr><td class="meta-label">Currency:&nbsp;</td><td>${escapeXML(inv.currency)}</td></tr>
-    </table>
+    <div class="meta">
+      ${inv.date ? `Issue Date: ${escapeXML(inv.date)} &nbsp;|&nbsp; ` : ''}Currency: ${escapeXML(inv.currency)}
+    </div>
   </div>
   <div class="parties">
     <div>
@@ -285,15 +283,17 @@ export function buildAndPrintPDF(inv) {
   <hr />
   <table>
     <thead><tr>
-      <th style="width:50%">Description</th><th style="width:12%">Qty</th>
-      <th style="width:18%">Rate</th><th style="width:20%">Amount</th>
+      <th style="width:50%">Description</th>
+      <th style="width:12%">Qty</th>
+      <th style="width:18%">Rate</th>
+      <th style="width:20%">Amount</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
   </table>
   <div class="totals">
     ${inv.subtotal ? `<div class="total-row"><span>Subtotal</span><span>${escapeXML(inv.currency)} ${escapeXML(inv.subtotal)}</span></div>` : ''}
-    ${inv.gst      ? `<div class="total-row"><span>Tax (GST 10%)</span><span>${escapeXML(inv.currency)} ${escapeXML(inv.gst)}</span></div>` : ''}
-    ${inv.total    ? `<div class="total-final"><span>Total</span><span>${escapeXML(inv.currency)} ${escapeXML(inv.total)}</span></div>`     : ''}
+    ${inv.gst      ? `<div class="total-row"><span>Tax (GST 10%)</span><span>${escapeXML(inv.currency)} ${escapeXML(inv.gst)}</span></div>`  : ''}
+    ${inv.total    ? `<div class="total-final"><span>Total</span><span>${escapeXML(inv.currency)} ${escapeXML(inv.total)}</span></div>`      : ''}
   </div>
   <div class="footer">Payment due within 30 days. Thank you for your business.</div>
 </body></html>`;
@@ -312,41 +312,37 @@ export function downloadPDF(form) {
   const itemRows = form.items.filter(i => i.desc).map(i => {
     const amt = (parseFloat(i.qty) || 0) * (parseFloat(i.rate) || 0);
     return `<tr>
-      <td style="padding:7px 8px;border-bottom:1px solid #cccccc;font-size:9pt;">${escapeXML(i.desc)}</td>
-      <td style="padding:7px 8px;border-bottom:1px solid #cccccc;text-align:right;font-size:9pt;">${i.qty || 0}</td>
-      <td style="padding:7px 8px;border-bottom:1px solid #cccccc;text-align:right;font-size:9pt;">${(parseFloat(i.rate)||0).toFixed(2)}</td>
-      <td style="padding:7px 8px;border-bottom:1px solid #cccccc;text-align:right;font-size:9pt;">${amt.toFixed(2)}</td>
+      <td style="padding:7px 8px;border-bottom:1px solid #ccc;font-size:9pt;">${escapeXML(i.desc)}</td>
+      <td style="padding:7px 8px;border-bottom:1px solid #ccc;text-align:right;font-size:9pt;">${i.qty || 0}</td>
+      <td style="padding:7px 8px;border-bottom:1px solid #ccc;text-align:right;font-size:9pt;">${(parseFloat(i.rate)||0).toFixed(2)}</td>
+      <td style="padding:7px 8px;border-bottom:1px solid #ccc;text-align:right;font-size:9pt;">${amt.toFixed(2)}</td>
     </tr>`;
   }).join('');
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
 <style>
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #222; background: #fff; padding: 50px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
-  .invoice-title { font-size: 22pt; font-weight: 700; letter-spacing: 0.02em; color: #111; }
-  .meta-table { font-size: 9pt; color: #444; text-align: right; line-height: 1.8; }
-  .meta-label { color: #888; }
-  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 28px; }
-  .party-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #888; margin-bottom: 6px; }
-  .party-name { font-size: 11pt; font-weight: 700; color: #111; margin-bottom: 2px; }
-  .party-detail { font-size: 9pt; color: #555; line-height: 1.6; }
-  .divider { border: none; border-top: 1px solid #ccc; margin: 0 0 16px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-  thead tr { border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; }
-  th { padding: 8px; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #666; text-align: left; }
-  th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }
-  .totals { margin-left: auto; width: 260px; border-top: 1px solid #ccc; padding-top: 10px; }
-  .total-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 9pt; color: #555; }
-  .total-final { display: flex; justify-content: space-between; padding: 8px 0 0; font-size: 11pt; font-weight: 700; color: #111; border-top: 1px solid #ccc; margin-top: 6px; }
-  .footer { margin-top: 48px; font-size: 8pt; color: #aaa; text-align: center; border-top: 1px solid #eee; padding-top: 12px; }
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Helvetica,Arial,sans-serif;font-size:10pt;color:#222;background:#fff;padding:50px;}
+  .header{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:32px;}
+  .invoice-title{font-size:22pt;font-weight:700;letter-spacing:.02em;color:#111;}
+  .meta{font-size:9pt;color:#888;margin-top:6px;line-height:1.8;}
+  .parties{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:28px;}
+  .party-label{font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:6px;}
+  .party-name{font-size:11pt;font-weight:700;color:#111;margin-bottom:2px;}
+  .party-detail{font-size:9pt;color:#555;line-height:1.6;}
+  hr{border:none;border-top:1px solid #ccc;margin:0 0 16px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  thead tr{border-top:1px solid #ccc;border-bottom:1px solid #ccc;}
+  th{padding:8px;font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;text-align:left;}
+  th:nth-child(2),th:nth-child(3),th:nth-child(4){text-align:right;}
+  .totals{margin-left:auto;width:260px;border-top:1px solid #ccc;padding-top:10px;}
+  .total-row{display:flex;justify-content:space-between;padding:3px 0;font-size:9pt;color:#555;}
+  .total-final{display:flex;justify-content:space-between;padding:8px 0 0;font-size:11pt;font-weight:700;color:#111;border-top:1px solid #ccc;margin-top:6px;}
+  .footer{margin-top:48px;font-size:8pt;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:12px;}
 </style></head><body>
   <div class="header">
     <div class="invoice-title">INVOICE</div>
-    <table class="meta-table" style="border:none;">
-      <tr><td class="meta-label">Issue Date:&nbsp;</td><td>${date}</td></tr>
-      <tr><td class="meta-label">Currency:&nbsp;</td><td>AUD</td></tr>
-    </table>
+    <div class="meta">Issue Date: ${date} &nbsp;|&nbsp; Currency: AUD</div>
   </div>
   <div class="parties">
     <div>
@@ -364,7 +360,7 @@ export function downloadPDF(form) {
       ${form.toPostcode ? `<div class="party-detail">${escapeXML(form.toPostcode)}</div>` : ''}
     </div>
   </div>
-  <hr class="divider" />
+  <hr />
   <table>
     <thead><tr>
       <th style="width:50%">Description</th>

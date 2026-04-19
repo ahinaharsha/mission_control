@@ -33,7 +33,7 @@ export default function ConvertSection() {
   };
 
   const features = [
-    { icon: '⚡', title: 'Quick formatting',     desc: 'Paste raw XML or JSON and get a clean, print-ready invoice instantly — no reformatting required.' },
+    { icon: '⚡', title: 'Quick formatting',     desc: 'Paste raw XML or JSON and get a clean, print-ready invoice instantly, no reformatting required.' },
     { icon: '🔄', title: 'Quick converting',     desc: 'One click converts your data to a professional PDF. No account, no uploads to a server.' },
     { icon: '📂', title: 'Drag & drop files',    desc: 'Drop a .xml or .json file directly onto the editor and the format is detected automatically.' },
     { icon: '🛡️', title: 'Stays on your device', desc: 'Everything runs in your browser. Your invoice data never leaves your machine.' },
@@ -59,7 +59,7 @@ export default function ConvertSection() {
           <div style={cvs.infoSticky}>
             <div style={cvs.tag}>Quick Convert</div>
             <h2 style={cvs.infoTitle}>Quick formatting &amp;<br />quick converting to PDF</h2>
-            <p style={cvs.infoText}>Already have an invoice as XML or JSON? Skip the re-entry. Paste your data, hit convert, and a polished PDF opens instantly — ready to print or save.</p>
+            <p style={cvs.infoText}>Already have an invoice as XML or JSON? Skip the typing. Paste your data, hit convert, and a PDF is opened immediately, ready to print or save instantly.</p>
             <div style={cvs.featureList}>
               {features.map((f) => (
                 <div key={f.title} style={cvs.featureItem}>
