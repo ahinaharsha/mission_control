@@ -16,6 +16,7 @@ import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
 import { getStatus,updateStatus } from './invoice-generator/TrackStatus';
 import { updateInvoice } from './invoice-update/updateInvoice';
+import { chat, clearChatHistory } from './AI-Implementation/chat';
 
 // Set up web app
 const app = express();
@@ -38,7 +39,7 @@ const HOST: string = process.env.IP || '127.0.0.1';
 //  ================= Make your routes under this comment guys ===================
 // ===============================================================================
 
-app.post('/auth/register', async (req: Request, res: Response) => {
+app.post('/v1/auth/register', async (req: Request, res: Response) => {
   try {
     await authRegister(req.body.email, req.body.password);
     res.status(201).json({ message: 'User registered successfully.' });
@@ -52,7 +53,7 @@ app.post('/auth/register', async (req: Request, res: Response) => {
 });
 
 // POST /auth/login
-app.post('/auth/login', async (req: Request, res: Response) => {
+app.post('/v1/auth/login', async (req: Request, res: Response) => {
   try {
     const result = await authLogin(req.body.email, req.body.password);
     res.status(200).json(result);
@@ -66,7 +67,7 @@ app.post('/auth/login', async (req: Request, res: Response) => {
 });
 
 // POST /auth/logout
-app.post('/auth/logout', async (req: Request, res: Response) => {
+app.post('/v1/auth/logout', async (req: Request, res: Response) => {
   try {
     await authLogout(req.header('token'));
     res.status(200).json({ message: 'Logged out successfully.' });
@@ -80,7 +81,7 @@ app.post('/auth/logout', async (req: Request, res: Response) => {
 });
 
 // POST/invoices
-app.post("/invoices", async (req: Request, res: Response) => {
+app.post('/v1/invoices', async (req: Request, res: Response) => {
   try {
     const xml = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
@@ -120,7 +121,7 @@ app.post("/invoices", async (req: Request, res: Response) => {
   }
 });
 
-app.get('/invoices/:id', async (req: Request, res: Response) => {
+app.get('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -134,7 +135,7 @@ app.get('/invoices/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/invoices/:id', async (req: Request, res: Response) => {
+app.put('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -148,7 +149,7 @@ app.put('/invoices/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/invoices/:id', async (req: Request, res: Response) => {
+app.delete('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -162,7 +163,7 @@ app.delete('/invoices/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
+app.get('/v1/invoices/:id/pdf', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -179,7 +180,7 @@ app.get('/invoices/:id/pdf', async (req: Request, res: Response) => {
 });
 
 //getting invoice status
-app.get('/invoices/:id/status', async (req: Request, res: Response) => {
+app.get('/v1/invoices/:id/status', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -194,7 +195,7 @@ app.get('/invoices/:id/status', async (req: Request, res: Response) => {
 });
 
 //adding invoice status update route.
-app.put('/invoices/:id/status', async (req: Request, res: Response) => {
+app.put('/v1/invoices/:id/status', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
     const invoiceId = req.params.id as string;
@@ -211,6 +212,37 @@ app.put('/invoices/:id/status', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
     
+});
+
+app.post('/v1/ai/chat', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required.' });
+    }
+    const result = await chat(token, message);
+    return res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.delete('/v1/ai/chat/history', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const result = await clearChatHistory(token);
+    return res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
 });
 
 

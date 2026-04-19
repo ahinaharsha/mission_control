@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Invoice API
-  version: 1.0.0
+  version: 2.0.0
   description: API for creating, managing, and tracking invoices. Make sure you select the vercel server link (Production server) so that you can actually use it.
 
 servers:
@@ -10,7 +10,7 @@ servers:
 
 paths:
 
-  /auth/register:
+  /v1/auth/register:
     post:
       summary: Register a new user
       tags: [Auth]
@@ -33,7 +33,7 @@ paths:
         '400':
           description: Bad request - missing email or password, or email already in use
 
-  /auth/login:
+  /v1/auth/login:
     post:
       summary: Login with email and password
       tags: [Auth]
@@ -58,7 +58,7 @@ paths:
         '401':
           description: Unauthorised - invalid email or password
 
-  /auth/logout:
+  /v1/auth/logout:
     post:
       summary: Logout current user
       tags: [Auth]
@@ -81,7 +81,7 @@ paths:
         '401':
           description: Unauthorised - no token provided
 
-  /invoices:
+  /v1/invoices:
     post:
       summary: Create a draft invoice
       tags: [Invoices]
@@ -118,7 +118,7 @@ paths:
         '403':
           description: Forbidden - no permission to create invoices
 
-  /invoices/{id}:
+  /v1/invoices/{id}:
     get:
       summary: Retrieve an invoice by ID
       tags: [Invoices]
@@ -209,7 +209,7 @@ paths:
         '409':
           description: Conflict - invoice already finalised, sent, or paid
 
-  /invoices/{id}/status:
+  /v1/invoices/{id}/status:
     get:
       summary: Get invoice status and lifecycle tracking
       tags: [Invoices]
@@ -276,7 +276,7 @@ paths:
         '404':
           description: Not found - invoice ID does not exist
 
-  /invoices/{id}/pdf:
+  /v1/invoices/{id}/pdf:
     get:
       summary: Download invoice as PDF
       tags: [Invoices]
@@ -303,6 +303,76 @@ paths:
           description: Not found - invoice or PDF not found
         '409':
           description: Conflict - invoice is not finalised yet, PDF not available
+
+  /v1/ai/chat:
+    post:
+      summary: Send a message to the AI invoicing assistant
+      tags: [AI]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: AI response returned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  tier:
+                    type: string
+                    enum: [standard, pro]
+                  messagesRemaining:
+                    type: integer
+                    nullable: true
+        '400':
+          description: Bad request - missing message
+        '401':
+          description: Unauthorised
+        '404':
+          description: User not found
+        '429':
+          description: Daily message limit reached - upgrade to Pro for unlimited messages
+
+  /v1/ai/chat/history:
+    delete:
+      summary: Clear AI chat history (Pro users only)
+      tags: [AI]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chat history cleared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorised
+        '403':
+          description: Forbidden - Pro tier required
 
 components:
 
