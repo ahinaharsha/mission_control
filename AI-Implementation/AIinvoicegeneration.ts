@@ -58,7 +58,7 @@ function extractJsonText(text: string): string {
   return text.slice(start, end + 1);
 }
 
-function normalizeInvoiceInput(raw: any): InvoiceInput {
+export function normalizeInvoiceInput(raw: any): InvoiceInput {
   if (!raw || typeof raw !== 'object') {
     throw new HttpError('AI returned an invalid invoice payload.', 500);
   }

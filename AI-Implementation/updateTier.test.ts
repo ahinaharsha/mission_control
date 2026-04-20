@@ -7,6 +7,13 @@ import { authLogin, authRegister } from '../AWS/auth/auth';
 let token: string;
 
 beforeEach(async () => {
+  // Override database config for local testing
+  process.env.DB_HOST = 'localhost';
+  process.env.DB_NAME = 'mission_control';
+  process.env.DB_USER = 'postgres';
+  process.env.DB_PASSWORD = 'postgres';
+  process.env.DB_PORT = '5432';
+
   await pool.query('DELETE FROM chat_history');
   await pool.query('DELETE FROM invoices');
   await pool.query('DELETE FROM users');
