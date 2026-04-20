@@ -201,7 +201,7 @@ beforeAll(async () => {
 
   // Create an invoice to test with
   await request(app)
-    .post('/invoices')
+    .post('/v1/invoices')
     .set('token', token)
     .set('Content-Type', 'application/xml')
     .send(validxml);
@@ -219,7 +219,7 @@ afterAll(async () => {
 describe('getstatus', () => {
     test('should return the status of an existing invoice', async () => {
         const res = await request(app)
-        .get(`/invoices/${invoiceId}/status`)
+        .get(`/v1/invoices/${invoiceId}/status`)
         .set('token', token)
         .set('invoiceId', invoiceId);
 
@@ -230,7 +230,7 @@ describe('getstatus', () => {
 
     test('should return 404 for non-existent invoice', async () => {
         const res = await request(app)
-        .get(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+        .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
         .set('token', token)
         .set('invoiceId', '00000000-0000-0000-0000-000000000000');
 
@@ -243,7 +243,7 @@ describe('getstatus', () => {
     		[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`]
   		);
   		const res = await request(app)
-    		.get(`/invoices/44444444-4444-4444-4444-444444444444/status`)
+    		.get(`/v1/invoices/44444444-4444-4444-4444-444444444444/status`)
     		.set('token', token);
   		expect(res.statusCode).toStrictEqual(200);
 	});
@@ -254,21 +254,21 @@ describe('getstatus', () => {
 			[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate></cbc:DueDate></Invoice>`]
 		);
 		const res = await request(app)
-			.get(`/invoices/55555555-5555-5555-5555-555555555555/status`)
+			.get(`/v1/invoices/55555555-5555-5555-5555-555555555555/status`)
 			.set('token', token);
 		expect(res.statusCode).toStrictEqual(200);
 	});
 
 	test('should return 401 for no token on get status', async () => {
 		const res = await request(app)
-			.get(`/invoices/${invoiceId}/status`);
+			.get(`/v1/invoices/${invoiceId}/status`);
 		expect(res.statusCode).toStrictEqual(401);
 		expect(res.body).toStrictEqual({ error: expect.any(String) });
 	});
 
 	test('should return 401 for no token on update status', async () => {
 		const res = await request(app)
-			.put(`/invoices/${invoiceId}/status`)
+			.put(`/v1/invoices/${invoiceId}/status`)
 			.send({ status: 'Paid' });
 		expect(res.statusCode).toStrictEqual(401);
 		expect(res.body).toStrictEqual({ error: expect.any(String) });
@@ -280,7 +280,7 @@ describe('getstatus', () => {
 			[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]
 		);
 		const res = await request(app)
-			.get(`/invoices/66666666-6666-6666-6666-666666666666/status`)
+			.get(`/v1/invoices/66666666-6666-6666-6666-666666666666/status`)
 			.set('token', token);
 		expect(res.statusCode).toStrictEqual(200);
 		expect(res.body.status).toBe('Overdue');
@@ -294,7 +294,7 @@ describe('getstatus', () => {
         const token2 = loginRes2.token; 
         
         const res = await request(app)
-        .get(`/invoices/${invoiceId}/status`)
+        .get(`/v1/invoices/${invoiceId}/status`)
         .set('token', token2)
         .set('invoiceId', invoiceId);
         
@@ -306,7 +306,7 @@ describe('getstatus', () => {
 	// Update the invoice in the database to have a past due date
 
 	const res = await request(app)
-		.get(`/invoices/${invoiceId}/status`)
+		.get(`/v1/invoices/${invoiceId}/status`)
 		.set('token', token)	
 		.set('invoiceId', invoiceId);
     
@@ -320,7 +320,7 @@ describe('getstatus', () => {
 		[token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]
 	);
 	const res = await request(app)
-		.get(`/invoices/77777777-7777-7777-7777-777777777777/status`)
+		.get(`/v1/invoices/77777777-7777-7777-7777-777777777777/status`)
 		.set('token', token);
 	expect(res.statusCode).toStrictEqual(200);
 	expect(res.body.status).toBe('Overdue');
@@ -330,7 +330,7 @@ describe('getstatus', () => {
 describe('UpdateStatus', () => {
 	test('should update the status of an existing invoice', async () => {
 		const res = await request(app)
-		.put(`/invoices/${invoiceId}/status`)
+		.put(`/v1/invoices/${invoiceId}/status`)
 		.set('token', token)
 		.set('invoiceId', invoiceId)
 		.send({ status: 'Paid' });
@@ -342,7 +342,7 @@ describe('UpdateStatus', () => {
 
 	test('should return 400 for invalid status value', async () => {
 		const res = await request(app)
-			.put(`/invoices/${invoiceId}/status`)
+			.put(`/v1/invoices/${invoiceId}/status`)
 			.set('token', token)
 			.send({ status: 'InvalidStatus' });
 		expect(res.statusCode).toStrictEqual(400);
@@ -351,7 +351,7 @@ describe('UpdateStatus', () => {
 
 	test('should return 404 for non-existent invoice', async () => {
 		const res = await request(app)	
-		.put(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+		.put(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
 		.set('token', token)
 		.set('invoiceId', '00000000-0000-0000-0000-000000000000')
 		.send({ status: 'Paid' });
@@ -366,7 +366,7 @@ describe('UpdateStatus', () => {
 		await authRegister(otherEmail, 'correctpassword123');
 		const otherLogin = await authLogin(otherEmail, 'correctpassword123');
 		const res = await request(app)
-			.put(`/invoices/${invoiceId}/status`)
+			.put(`/v1/invoices/${invoiceId}/status`)
 			.set('token', otherLogin.token)
 			.send({ status: 'Paid' });
 		expect(res.statusCode).toStrictEqual(403);
