@@ -373,7 +373,97 @@ paths:
           description: Unauthorised
         '403':
           description: Forbidden - Pro tier required
-  
+
+  /v1/ai/invoice/generate:
+    post:
+      summary: Generate an invoice from a natural language description (Standard and Pro)
+      tags: [AI]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+                  example: Create an invoice for Sarah Johnson for 10 hours of cloud consulting at $250 per hour
+      responses:
+        '201':
+          description: Invoice generated and saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invoiceId:
+                    type: string
+                  invoiceData:
+                    $ref: '#/components/schemas/InvoiceInput'
+        '400':
+          description: Bad request - missing description
+        '401':
+          description: Unauthorised
+        '404':
+          description: User not found
+        '429':
+          description: Daily message limit reached - upgrade to Pro for unlimited messages
+        '500':
+          description: AI failed to generate valid invoice data
+
+  /v1/ai/invoice/autofill:
+    post:
+      summary: Generate invoice field suggestions from a natural language description (Pro only)
+      tags: [AI]
+      parameters:
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+                  example: Bill Sarah Johnson at Horizon Digital for 10 hours of consulting at $250 per hour
+      responses:
+        '200':
+          description: Invoice fields generated successfully for review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invoiceData:
+                    $ref: '#/components/schemas/InvoiceInput'
+        '400':
+          description: Bad request - missing description
+        '401':
+          description: Unauthorised
+        '403':
+          description: Forbidden - Pro tier required
+        '404':
+          description: User not found
+        '500':
+          description: AI failed to generate valid invoice data
+
   /v1/users/tier:
     put:
       summary: Update user tier

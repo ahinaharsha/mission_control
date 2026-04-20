@@ -4,6 +4,7 @@ import { HttpError } from '../class';
 import { authenticate } from '../AWS/auth/auth';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import { create_invoice, validateInvoiceInput } from '../invoice-generator/generator';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -17,6 +18,56 @@ You help users with:
 - Guiding users through creating, updating, and managing invoices
 - Australian invoicing regulations and requirements
 Keep responses concise, professional, and relevant to invoicing.`;
+
+const INVOICE_GENERATION_PROMPT = `You are an expert invoicing assistant for MC Invoicing, a Peppol UBL-compliant invoice management platform.
+The user will describe an invoice in natural language. You must extract the invoice details and return ONLY a valid JSON object with no preamble, no markdown, no backticks.
+The JSON must follow this exact structure:
+{
+  "customer": {
+    "id": "string",
+    "fullName": "string",
+    "email": "string",
+    "phone": "string",
+    "billingAddress": {
+      "street": "string",
+      "city": "string",
+      "postcode": "string",
+      "country": "string"
+    },
+    "shippingAddress": {
+      "street": "string",
+      "city": "string",
+      "postcode": "string",
+      "country": "string"
+    }
+  },
+  "lineItems": [
+    {
+      "description": "string",
+      "quantity": number,
+      "rate": number
+    }
+  ],
+  "currency": "AUD",
+  "tax": {
+    "taxId": "GST",
+    "countryCode": "AU",
+    "taxPercentage": 10
+  },
+  "from": {
+    "businessName": "string",
+    "address": {
+      "street": "string",
+      "city": "string",
+      "postcode": "string",
+      "country": "string"
+    },
+    "taxId": "string",
+    "abnNumber": "string",
+    "dueDate": "YYYY-MM-DD"
+  }
+}
+If any information is missing, use sensible defaults. Always return valid JSON only.`;
 
 async function getUserFromToken(token: string) {
   const decoded = jwt.decode(token) as { userId: string };
@@ -114,4 +165,106 @@ export async function clearChatHistory(token: string | undefined) {
 
   await pool.query(`DELETE FROM chat_history WHERE userId = $1`, [user.userid]);
   return { message: 'Chat history cleared.' };
+}
+
+export async function generateInvoiceFromAI(token: string | undefined, description: string) {
+  authenticate(token);
+
+  const user = await getUserFromToken(token as string);
+  const userId = user.userid;
+  const tier = user.tier;
+
+  // Check message limit for standard users
+  const resetCount = await resetMessageCountIfNeeded(userId);
+  const currentCount = resetCount !== null ? resetCount : user.message_count;
+
+  if (tier === 'standard' && currentCount >= STANDARD_MESSAGE_LIMIT) {
+    throw new HttpError('Daily message limit reached. Upgrade to Pro for unlimited messages.', 429);
+  }
+
+  // Call Anthropic API
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    system: INVOICE_GENERATION_PROMPT,
+    messages: [{ role: 'user', content: description }]
+  });
+
+  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+
+  // Parse the JSON response
+  let invoiceInput: any;
+  try {
+    const clean = responseText.replace(/```json|```/g, '').trim();
+    invoiceInput = JSON.parse(clean);
+    if (invoiceInput.from?.dueDate) {
+      invoiceInput.from.dueDate = new Date(invoiceInput.from.dueDate);
+    }
+  } catch (e) {
+    throw new HttpError('AI failed to generate valid invoice data. Please try again with more details.', 500);
+  }
+
+  // Validate the invoice input
+  validateInvoiceInput(invoiceInput);
+
+  // Generate Peppol UBL XML
+  const invoiceXML = create_invoice(invoiceInput);
+  const invoiceId = uuidv4();
+
+  // Save to database
+  await pool.query(
+    `INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status) VALUES ($1, $2, $3, $4, $5)`,
+    [invoiceId, userId, invoiceXML, JSON.stringify(invoiceInput), 'Generated']
+  );
+
+  // Increment message count for standard users
+  if (tier === 'standard') {
+    await pool.query(
+      `UPDATE users SET message_count = message_count + 1 WHERE userId = $1`,
+      [userId]
+    );
+  }
+
+  return {
+    message: 'Invoice generated successfully.',
+    invoiceId,
+    invoiceData: invoiceInput
+  };
+}
+
+export async function autofillInvoiceFromAI(token: string | undefined, description: string) {
+  authenticate(token);
+
+  const user = await getUserFromToken(token as string);
+  const tier = user.tier;
+
+  if (tier !== 'pro') {
+    throw new HttpError('Autofill is only available for Pro users.', 403);
+  }
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    system: INVOICE_GENERATION_PROMPT,
+    messages: [{ role: 'user', content: description }]
+  });
+
+  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+
+  // Parse the JSON response
+  let invoiceInput: any;
+  try {
+    const clean = responseText.replace(/```json|```/g, '').trim();
+    invoiceInput = JSON.parse(clean);
+    if (invoiceInput.from?.dueDate) {
+      invoiceInput.from.dueDate = new Date(invoiceInput.from.dueDate);
+    }
+  } catch (e) {
+    throw new HttpError('AI failed to generate valid invoice data. Please try again with more details.', 500);
+  }
+
+  return {
+    message: 'Invoice fields generated successfully. Please review and submit.',
+    invoiceData: invoiceInput
+  };
 }
