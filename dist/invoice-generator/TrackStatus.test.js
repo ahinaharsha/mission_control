@@ -210,7 +210,7 @@ let invoiceId;
     token = loginRes.token;
     // Create an invoice to test with
     yield (0, supertest_1.default)(server_1.app)
-        .post('/invoices')
+        .post('/v1/invoices')
         .set('token', token)
         .set('Content-Type', 'application/xml')
         .send(validxml);
@@ -223,7 +223,7 @@ let invoiceId;
 (0, globals_1.describe)('getstatus', () => {
     (0, globals_1.test)('should return the status of an existing invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/status`)
+            .get(`/v1/invoices/${invoiceId}/status`)
             .set('token', token)
             .set('invoiceId', invoiceId);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
@@ -231,10 +231,45 @@ let invoiceId;
     }));
     (0, globals_1.test)('should return 404 for non-existent invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+            .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
             .set('token', token)
             .set('invoiceId', '00000000-0000-0000-0000-000000000000');
         (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
+    }));
+    (0, globals_1.test)('should handle invoice with missing due date', () => __awaiter(void 0, void 0, void 0, function* () {
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('44444444-4444-4444-4444-444444444444', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`]);
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/44444444-4444-4444-4444-444444444444/status`)
+            .set('token', token);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+    }));
+    (0, globals_1.test)('should handle invoice with empty due date tag', () => __awaiter(void 0, void 0, void 0, function* () {
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('55555555-5555-5555-5555-555555555555', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate></cbc:DueDate></Invoice>`]);
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/55555555-5555-5555-5555-555555555555/status`)
+            .set('token', token);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+    }));
+    (0, globals_1.test)('should return 401 for no token on get status', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/${invoiceId}/status`);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+    }));
+    (0, globals_1.test)('should return 401 for no token on update status', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .put(`/v1/invoices/${invoiceId}/status`)
+            .send({ status: 'Paid' });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+    }));
+    (0, globals_1.test)('should return immediately if status is already Overdue', () => __awaiter(void 0, void 0, void 0, function* () {
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('66666666-6666-6666-6666-666666666666', (SELECT userId FROM users WHERE token = $1), $2, 'Overdue')`, [token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]);
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/66666666-6666-6666-6666-666666666666/status`)
+            .set('token', token);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body.status).toBe('Overdue');
     }));
     (0, globals_1.test)('should return 403 for invoice belonging to another user', () => __awaiter(void 0, void 0, void 0, function* () {
         // Create a second user and invoice
@@ -243,7 +278,7 @@ let invoiceId;
         const loginRes2 = yield (0, auth_1.authLogin)(testEmail2, 'correctpassword123');
         const token2 = loginRes2.token;
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/status`)
+            .get(`/v1/invoices/${invoiceId}/status`)
             .set('token', token2)
             .set('invoiceId', invoiceId);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
@@ -252,9 +287,17 @@ let invoiceId;
     (0, globals_1.test)('should return overdue if invoice is past due date and not paid', () => __awaiter(void 0, void 0, void 0, function* () {
         // Update the invoice in the database to have a past due date
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/status`)
+            .get(`/v1/invoices/${invoiceId}/status`)
             .set('token', token)
             .set('invoiceId', invoiceId);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body.status).toBe('Overdue');
+    }));
+    (0, globals_1.test)('should set status to Overdue if due date has passed', () => __awaiter(void 0, void 0, void 0, function* () {
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('77777777-7777-7777-7777-777777777777', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:DueDate>2020-01-01</cbc:DueDate></Invoice>`]);
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/77777777-7777-7777-7777-777777777777/status`)
+            .set('token', token);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
         (0, globals_1.expect)(res.body.status).toBe('Overdue');
     }));
@@ -262,7 +305,7 @@ let invoiceId;
 (0, globals_1.describe)('UpdateStatus', () => {
     (0, globals_1.test)('should update the status of an existing invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}/status`)
+            .put(`/v1/invoices/${invoiceId}/status`)
             .set('token', token)
             .set('invoiceId', invoiceId)
             .send({ status: 'Paid' });
@@ -270,14 +313,33 @@ let invoiceId;
         const status = yield (0, TrackStatus_1.getStatus)(invoiceId, token);
         (0, globals_1.expect)(status).toBe('Paid');
     }));
+    (0, globals_1.test)('should return 400 for invalid status value', () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .put(`/v1/invoices/${invoiceId}/status`)
+            .set('token', token)
+            .send({ status: 'InvalidStatus' });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(400);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+    }));
     (0, globals_1.test)('should return 404 for non-existent invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/00000000-0000-0000-0000-000000000000/status`)
+            .put(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
             .set('token', token)
             .set('invoiceId', '00000000-0000-0000-0000-000000000000')
             .send({ status: 'Paid' });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
         const status = yield (0, TrackStatus_1.getStatus)(invoiceId, token);
         (0, globals_1.expect)(status).toBe('Paid');
+    }));
+    (0, globals_1.test)('should return 403 for invoice belonging to another user on update status', () => __awaiter(void 0, void 0, void 0, function* () {
+        const otherEmail = `other-${Date.now()}@gmail.com`;
+        yield (0, auth_1.authRegister)(otherEmail, 'correctpassword123');
+        const otherLogin = yield (0, auth_1.authLogin)(otherEmail, 'correctpassword123');
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .put(`/v1/invoices/${invoiceId}/status`)
+            .set('token', otherLogin.token)
+            .send({ status: 'Paid' });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
     }));
 });

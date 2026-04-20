@@ -14,48 +14,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const globals_1 = require("@jest/globals");
 const generator_1 = require("./generator");
-const http_1 = __importDefault(require("http"));
-const https_1 = __importDefault(require("https"));
-const url_1 = require("url");
 const datastore_1 = __importDefault(require("../AWS/datastore"));
 const auth_1 = require("../AWS/auth/auth");
-function request(method, url, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        const parsed = new url_1.URL(url);
-        const lib = parsed.protocol === 'https:' ? https_1.default : http_1.default;
-        const body = (options === null || options === void 0 ? void 0 : options.json) !== undefined
-            ? typeof options.json === 'string'
-                ? options.json
-                : JSON.stringify(options.json)
-            : undefined;
-        const headers = Object.assign(Object.assign({}, ((_a = options === null || options === void 0 ? void 0 : options.headers) !== null && _a !== void 0 ? _a : {})), (body
-            ? {
-                'Content-Type': typeof (options === null || options === void 0 ? void 0 : options.json) === 'string' ? 'application/xml' : 'application/json',
-                'Content-Length': Buffer.byteLength(body).toString(),
-            }
-            : {}));
-        const reqOptions = {
-            method,
-            hostname: parsed.hostname,
-            port: parsed.port,
-            path: parsed.pathname + parsed.search,
-            headers,
-        };
-        return new Promise((resolve, reject) => {
-            const req = lib.request(reqOptions, (res) => {
-                const chunks = [];
-                res.on('data', (chunk) => chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk));
-                res.on('end', () => { var _a; return resolve({ statusCode: (_a = res.statusCode) !== null && _a !== void 0 ? _a : 0, body: Buffer.concat(chunks), headers: res.headers }); });
-            });
-            req.on('error', reject);
-            if (body)
-                req.write(body);
-            req.end();
-        });
-    });
-}
-const SERVER_URL = 'http://localhost:3000';
+const supertest_1 = __importDefault(require("supertest"));
+const server_1 = require("../server");
+const class_1 = require("../class");
+(0, globals_1.beforeAll)(() => __awaiter(void 0, void 0, void 0, function* () {
+    yield datastore_1.default.query('DELETE FROM invoices');
+    yield datastore_1.default.query('DELETE FROM users');
+}), 10000);
+(0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
+    yield datastore_1.default.end();
+}), 10000);
 const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
 	<cbc:UBLVersionID>2.0</cbc:UBLVersionID>
@@ -236,20 +206,64 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 		</cac:LineItem>
 	</cac:OrderLine>
 </Order>`;
+const invalidxml = '<noxml>';
+const noxml = '';
 (0, globals_1.describe)("Invoice Generator", () => {
     (0, globals_1.test)("should generate an invoice XML", () => __awaiter(void 0, void 0, void 0, function* () {
         const testEmail = `test-${Date.now()}@gmail.com`;
         yield (0, auth_1.authRegister)(testEmail, 'correctpassword123');
         const tokenRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
-        const res = yield request('POST', `${SERVER_URL}/invoices`, {
-            headers: { token: tokenRes.token },
-            json: validxml
-        });
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .post('/v1/invoices')
+            .set('token', tokenRes.token)
+            .set('Content-Type', 'application/xml')
+            .send(validxml);
         (0, globals_1.expect)(res.statusCode).toBe(201);
-        const body = JSON.parse(res.body.toString());
-        (0, globals_1.expect)(body.message).toBe("Invoice generated successfully.");
-        (0, globals_1.expect)(body.filePath).toBeDefined();
+        (0, globals_1.expect)(res.body.message).toBe("Invoice generated successfully.");
+        (0, globals_1.expect)(res.body.filePath).toBeDefined();
+        (0, globals_1.expect)(res.body.invoiceId).toBeDefined();
     }));
+    (0, globals_1.test)("should return 400 for invalid XML", () => __awaiter(void 0, void 0, void 0, function* () {
+        const testEmail = `test-${Date.now()}@gmail.com`;
+        yield (0, auth_1.authRegister)(testEmail, 'correctpassword123');
+        const tokenRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .post('/v1/invoices')
+            .set('token', tokenRes.token)
+            .set('Content-Type', 'application/xml')
+            .send(invalidxml);
+        (0, globals_1.expect)(res.statusCode).toBe(400);
+        (0, globals_1.expect)(res.body.error).toBe("Invalid XML format.");
+    }));
+    (0, globals_1.test)("should return 400 for missing XML", () => __awaiter(void 0, void 0, void 0, function* () {
+        const testEmail = `test-${Date.now()}@gmail.com`;
+        yield (0, auth_1.authRegister)(testEmail, 'correctpassword123');
+        const tokenRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .post('/v1/invoices')
+            .set('token', tokenRes.token)
+            .set('Content-Type', 'application/xml')
+            .send(noxml);
+        (0, globals_1.expect)(res.statusCode).toBe(400);
+        (0, globals_1.expect)(res.body.error).toBe("Invalid XML format.");
+    }));
+    (0, globals_1.test)("Not logged in", () => __awaiter(void 0, void 0, void 0, function* () {
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .post('/v1/invoices')
+            .set('Content-Type', 'application/xml')
+            .send(validxml);
+        (0, globals_1.expect)(res.statusCode).toBe(401);
+        (0, globals_1.expect)(res.body.error).toBe("Not logged in.");
+    }));
+    (0, globals_1.test)("should generate invoice input json from xml", () => {
+        const result = (0, generator_1.parseOrderXML)(validxml);
+        (0, globals_1.expect)(result).toBeDefined();
+        (0, globals_1.expect)(result.customer).toBeDefined();
+        (0, globals_1.expect)(result.lineItems).toBeDefined();
+        (0, globals_1.expect)(result.currency).toBeDefined();
+        (0, globals_1.expect)(result.tax).toBeDefined();
+        (0, globals_1.expect)(result.from).toBeDefined();
+    });
     (0, globals_1.test)("should generate valid XML", () => {
         const input = {
             customer: {
@@ -257,40 +271,15 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
                 fullName: "John Doe",
                 email: "john@test.com",
                 phone: "12345678",
-                billingAddress: {
-                    street: "456 Road",
-                    city: "Sydney",
-                    postcode: "2001",
-                    country: "AU"
-                },
-                shippingAddress: {
-                    street: "456 Road",
-                    city: "Sydney",
-                    postcode: "2001",
-                    country: "AU"
-                }
+                billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+                shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
             },
-            lineItems: [
-                {
-                    description: "Product A",
-                    quantity: 2,
-                    rate: 50
-                }
-            ],
+            lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
             currency: "AUD",
-            tax: {
-                taxId: "GST",
-                countryCode: "AU",
-                taxPercentage: 10
-            },
+            tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
             from: {
                 businessName: "Test Business",
-                address: {
-                    street: "123 Street",
-                    city: "Sydney",
-                    postcode: "2000",
-                    country: "AU"
-                },
+                address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
                 taxId: "gst-123",
                 abnNumber: "456",
                 dueDate: new Date("2026-07-01")
@@ -301,13 +290,96 @@ const validxml = `<?xml version="1.0" encoding="UTF-8"?>
         (0, globals_1.expect)(xml).toContain("John Doe");
         (0, globals_1.expect)(xml).toContain("Product A");
     });
-    (0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
-        try {
-            yield datastore_1.default.end();
-        }
-        finally {
-            http_1.default.globalAgent.destroy();
-            https_1.default.globalAgent.destroy();
-        }
-    }));
+    (0, globals_1.test)('should throw HttpError for invalid from details', () => {
+        const invalidInput = {
+            customer: {
+                id: "CUST-1",
+                fullName: "John Doe",
+                email: "john@test.com",
+                phone: "12345678",
+                billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+                shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+            },
+            lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+            currency: "AUD",
+            tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+            from: {
+                businessName: '',
+                address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+                taxId: "gst-123",
+                abnNumber: "456",
+                dueDate: new Date("2026-07-01")
+            }
+        };
+        (0, globals_1.expect)(() => (0, generator_1.validateInvoiceInput)(invalidInput)).toThrow(class_1.HttpError);
+    });
+    (0, globals_1.test)('should throw HttpError for invalid line items', () => {
+        const invalidInput = {
+            customer: {
+                id: "CUST-1",
+                fullName: "John Doe",
+                email: "john@test.com",
+                phone: "12345678",
+                billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+                shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+            },
+            lineItems: [],
+            currency: "AUD",
+            tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+            from: {
+                businessName: "Test Business",
+                address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+                taxId: "gst-123",
+                abnNumber: "456",
+                dueDate: new Date("2026-07-01")
+            }
+        };
+        (0, globals_1.expect)(() => (0, generator_1.validateInvoiceInput)(invalidInput)).toThrow(class_1.HttpError);
+    });
+    (0, globals_1.test)('should throw HttpError for invalid currency', () => {
+        const invalidInput = {
+            customer: {
+                id: "CUST-1",
+                fullName: "John Doe",
+                email: "john@test.com",
+                phone: "12345678",
+                billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+                shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+            },
+            lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+            currency: "INVALID",
+            tax: { taxId: "GST", countryCode: "AU", taxPercentage: 10 },
+            from: {
+                businessName: "Test Business",
+                address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+                taxId: "gst-123",
+                abnNumber: "456",
+                dueDate: new Date("2026-07-01")
+            }
+        };
+        (0, globals_1.expect)(() => (0, generator_1.validateInvoiceInput)(invalidInput)).toThrow(class_1.HttpError);
+    });
+    (0, globals_1.test)('should throw HttpError for invalid tax', () => {
+        const invalidInput = {
+            customer: {
+                id: "CUST-1",
+                fullName: "John Doe",
+                email: "john@test.com",
+                phone: "12345678",
+                billingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" },
+                shippingAddress: { street: "456 Road", city: "Sydney", postcode: "2001", country: "AU" }
+            },
+            lineItems: [{ description: "Product A", quantity: 2, rate: 50 }],
+            currency: "AUD",
+            tax: { taxId: "", countryCode: "AU", taxPercentage: 10 },
+            from: {
+                businessName: "Test Business",
+                address: { street: "123 Street", city: "Sydney", postcode: "2000", country: "AU" },
+                taxId: "gst-123",
+                abnNumber: "456",
+                dueDate: new Date("2026-07-01")
+            }
+        };
+        (0, globals_1.expect)(() => (0, generator_1.validateInvoiceInput)(invalidInput)).toThrow(class_1.HttpError);
+    });
 });

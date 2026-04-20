@@ -16,6 +16,7 @@ const supertest_1 = __importDefault(require("supertest"));
 const server_1 = require("../server");
 const datastore_1 = __importDefault(require("../AWS/datastore"));
 const auth_1 = require("../AWS/auth/auth");
+const globals_1 = require("@jest/globals");
 const validxml = `<?xml version="1.0" encoding="UTF-8"?>
 <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
   <cbc:UBLVersionID>2.0</cbc:UBLVersionID>
@@ -82,7 +83,7 @@ const validUpdate = {
 };
 let token;
 let invoiceId;
-beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
+(0, globals_1.beforeEach)(() => __awaiter(void 0, void 0, void 0, function* () {
     yield datastore_1.default.query('DELETE FROM invoices');
     yield datastore_1.default.query('DELETE FROM users');
     const testEmail = `test-${Date.now()}@gmail.com`;
@@ -90,27 +91,27 @@ beforeEach(() => __awaiter(void 0, void 0, void 0, function* () {
     const loginRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
     token = loginRes.token;
     const res = yield (0, supertest_1.default)(server_1.app)
-        .post('/invoices')
+        .post('/v1/invoices')
         .set('token', token)
         .set('Content-Type', 'application/xml')
         .send(validxml);
     invoiceId = JSON.parse(res.text).invoiceId;
 }), 30000);
-afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
+(0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
     yield datastore_1.default.end();
 }), 30000);
-describe('PUT /invoices/:id', () => {
-    test('Successfully updates a draft invoice', () => __awaiter(void 0, void 0, void 0, function* () {
+(0, globals_1.describe)('PUT /v1/invoices/:id', () => {
+    (0, globals_1.test)('Successfully updates a draft invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ message: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body).toStrictEqual({ message: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
-    test('Successfully updates lineItems, currency, tax and from', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Successfully updates lineItems, currency, tax and from', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', token)
             .send({
             lineItems: [{ description: 'New Item', quantity: 5, rate: 20 }],
@@ -124,10 +125,10 @@ describe('PUT /invoices/:id', () => {
                 dueDate: new Date('2026-07-01')
             }
         });
-        expect(res.body).toStrictEqual({ message: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body).toStrictEqual({ message: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
-    test('Successfully updates invoice with no dueDate', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Successfully updates invoice with no dueDate', () => __awaiter(void 0, void 0, void 0, function* () {
         const invoiceDataWithoutDueDate = {
             customer: {
                 id: "CUST-1",
@@ -149,67 +150,67 @@ describe('PUT /invoices/:id', () => {
         };
         yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status) VALUES ('22222222-2222-2222-2222-222222222222', (SELECT userId FROM users WHERE token = $1), 'xml', $2, 'Generated')`, [token, JSON.stringify(invoiceDataWithoutDueDate)]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/22222222-2222-2222-2222-222222222222`)
+            .put(`/v1/invoices/22222222-2222-2222-2222-222222222222`)
             .set('token', token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ message: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(200);
+        (0, globals_1.expect)(res.body).toStrictEqual({ message: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
-    test('No token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('No token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(401);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
-    test('Invalid token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Invalid token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', 'invalidtoken')
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(401);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
-    test('Invoice with no data returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Invoice with no data returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
         yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('11111111-1111-1111-1111-111111111111', (SELECT userId FROM users WHERE token = $1), 'xml', 'Generated')`, [token]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/11111111-1111-1111-1111-111111111111`)
+            .put(`/v1/invoices/11111111-1111-1111-1111-111111111111`)
             .set('token', token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(404);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
     }));
-    test('Invoice not found returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Invoice not found returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/00000000-0000-0000-0000-000000000000`)
+            .put(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
             .set('token', token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(404);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
     }));
-    test('Wrong user returns 403', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Wrong user returns 403', () => __awaiter(void 0, void 0, void 0, function* () {
         const otherEmail = `other-${Date.now()}@gmail.com`;
         yield (0, auth_1.authRegister)(otherEmail, 'correctpassword123');
         const otherLogin = yield (0, auth_1.authLogin)(otherEmail, 'correctpassword123');
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', otherLogin.token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(403);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
     }));
-    test('Finalised invoice returns 409', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Finalised invoice returns 409', () => __awaiter(void 0, void 0, void 0, function* () {
         yield datastore_1.default.query(`UPDATE invoices SET status = 'Sent' WHERE invoiceId = $1`, [invoiceId]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', token)
             .send(validUpdate);
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(409);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(409);
     }));
-    test('Invalid update body returns 400', () => __awaiter(void 0, void 0, void 0, function* () {
+    (0, globals_1.test)('Invalid update body returns 400', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .put(`/invoices/${invoiceId}`)
+            .put(`/v1/invoices/${invoiceId}`)
             .set('token', token)
             .send({ customer: {
                 fullName: '',
@@ -218,7 +219,7 @@ describe('PUT /invoices/:id', () => {
                 billingAddress: { street: '', city: '', postcode: '', country: '' },
                 shippingAddress: { street: '', city: '', postcode: '', country: '' }
             } });
-        expect(res.body).toStrictEqual({ error: expect.any(String) });
-        expect(res.statusCode).toStrictEqual(400);
+        (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(400);
     }));
 });

@@ -17,6 +17,7 @@ import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
 import { getStatus,updateStatus } from './invoice-generator/TrackStatus';
 import { updateInvoice } from './invoice-update/updateInvoice';
 import { chat, clearChatHistory } from './AI-Implementation/chat';
+import { generateInvoiceFromAI, generateInvoicePrefill } from './AI-Implementation/AIinvoicegeneration';
 import { updateTier } from './AI-Implementation/updateTier';
 
 // Set up web app
@@ -223,6 +224,63 @@ app.post('/v1/ai/chat', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
     const result = await chat(token, message);
+    return res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/v1/ai/invoices', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Invoice description is required.' });
+    }
+
+    const result = await generateInvoiceFromAI(token, description);
+    return res.status(201).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/v1/ai/generate-invoice', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Invoice description is required.' });
+    }
+
+    const result = await generateInvoiceFromAI(token, description);
+    return res.status(200).json({ invoice: result });
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/v1/ai/invoices/autofill', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Invoice description is required.' });
+    }
+
+    const result = await generateInvoicePrefill(token, description);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {

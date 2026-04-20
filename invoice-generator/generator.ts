@@ -299,5 +299,41 @@ export async function generateInvoice(xml: string, token: string|undefined): Pro
     };
 }
 
+export async function generateInvoiceFromInput(input: InvoiceInput, token: string | undefined): Promise<generatorResult> {
+    authenticate(token);
+
+    if (!input) {
+        throw new HttpError('Missing invoice data.', 400);
+    }
+
+    validateInvoiceInput(input);
+
+    const invoiceXML = create_invoice(input);
+    const invoiceId = uuidv4();
+    const userResult = await pool.query(
+      `SELECT userId FROM users WHERE token = $1`,
+      [token]
+    );
+
+    if (userResult.rows.length === 0) {
+      throw new HttpError('Invalid or expired token.', 401);
+    }
+
+    const userId = userResult.rows[0].userid;
+
+    await pool.query(
+      `INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [invoiceId, userId, invoiceXML, JSON.stringify(input), 'Generated']
+    );
+
+    return {
+      output: invoiceXML,
+      message: 'Invoice generated successfully.',
+      code: 200,
+      invoiceId
+    };
+}
+
 
 

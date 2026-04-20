@@ -16,14 +16,17 @@ exports.parseOrderXML = parseOrderXML;
 exports.validateInvoiceInput = validateInvoiceInput;
 exports.create_invoice = create_invoice;
 exports.generateInvoice = generateInvoice;
+exports.generateInvoiceFromInput = generateInvoiceFromInput;
 const xml_js_1 = require("xml-js");
 const validation_1 = require("../validationEngine/validation");
 const class_1 = require("../class");
 const peppol_toolkit_1 = require("@pixeldrive/peppol-toolkit");
 const uuid_1 = require("uuid");
 const datastore_1 = __importDefault(require("../AWS/datastore"));
+const auth_1 = require("../AWS/auth/auth");
+// Function to parse the input XML and extract necessary details for invoice generation
 function parseOrderXML(xml) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6;
     const parsed = (0, xml_js_1.xml2js)(xml, { compact: true });
     const order = parsed.Order;
     const buyerParty = order["cac:BuyerCustomerParty"]["cac:Party"];
@@ -72,11 +75,12 @@ function parseOrderXML(xml) {
                 postcode: (_2 = sellerParty["cac:PostalAddress"]["cbc:PostalZone"]) === null || _2 === void 0 ? void 0 : _2._text,
                 country: (_3 = sellerParty["cac:PostalAddress"]["cac:Country"]["cbc:IdentificationCode"]) === null || _3 === void 0 ? void 0 : _3._text
             },
-            dueDate: new Date()
+            dueDate: ((_4 = order["cbc:DueDate"]) === null || _4 === void 0 ? void 0 : _4._text) ? new Date(order["cbc:DueDate"]._text) : (((_6 = (_5 = order["cac:Delivery"]) === null || _5 === void 0 ? void 0 : _5["cbc:StartDate"]) === null || _6 === void 0 ? void 0 : _6._text) ? new Date(order["cac:Delivery"]["cbc:StartDate"]._text) : new Date())
         }
     };
     return invoiceInput;
 }
+// Function to validate the extracted input data
 function validateInvoiceInput(input) {
     const customerErrors = (0, validation_1.validateCustomer)(input.customer);
     if (customerErrors.length > 0) {
@@ -99,6 +103,7 @@ function validateInvoiceInput(input) {
         throw new class_1.HttpError(JSON.stringify(taxErrors), 400);
     }
 }
+// Function to generate the invoice XML using the PeppolToolkit
 function create_invoice(input) {
     var _a;
     const toolkit = new peppol_toolkit_1.PeppolToolkit();
@@ -197,38 +202,60 @@ function create_invoice(input) {
     };
     return toolkit.invoiceToPeppolUBL(invoiceData);
 }
+// Main function to handle the entire invoice generation process
 function generateInvoice(xml, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!token) {
-            throw new class_1.HttpError('Not logged in.', 401);
+        (0, auth_1.authenticate)(token);
+        if (!xml || xml.trim() === '' || xml === '{}' || !xml.trim().startsWith('<')) {
+            throw new class_1.HttpError('Invalid XML format.', 400);
         }
-        const input = parseOrderXML(xml);
+        let input;
         try {
-            validateInvoiceInput(input);
+            input = parseOrderXML(xml);
         }
-        catch (error) {
-            return {
-                message: error.message,
-                code: error.statusCode || 500
-            };
+        catch (e) {
+            throw new class_1.HttpError('Invalid XML format.', 400);
         }
+        validateInvoiceInput(input);
         const invoiceXML = create_invoice(input);
         const invoiceNumber = `INV-${Date.now()}`;
         const invoiceId = (0, uuid_1.v4)();
         const userResult = yield datastore_1.default.query(`SELECT userId FROM users WHERE token = $1`, [token]);
-        const userId = userResult.rows[0].userId;
+        if (userResult.rows.length === 0) {
+            throw new class_1.HttpError('Invalid or expired token.', 401);
+        }
+        const userId = userResult.rows[0].userid;
         console.log("User ID from token:", userId);
-        const result = yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`, [invoiceId, userId, invoiceXML, 'generated']);
-        // const invoiceResult = await pool.query(
-        //   'SELECT * FROM invoices WHERE "userId" = $2 ORDER BY "createdAt" DESC LIMIT 1',
-        //   [userId]
-        // );
+        const result = yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status)   VALUES ($1, $2, $3, $4, $5)   RETURNING *`, [invoiceId, userId, invoiceXML, JSON.stringify(input), 'Generated']);
         return {
             output: invoiceXML,
             message: "Invoice generated successfully.",
-            code: 200
+            code: 200,
+            invoiceId: invoiceId
+        };
+    });
+}
+function generateInvoiceFromInput(input, token) {
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, auth_1.authenticate)(token);
+        if (!input) {
+            throw new class_1.HttpError('Missing invoice data.', 400);
+        }
+        validateInvoiceInput(input);
+        const invoiceXML = create_invoice(input);
+        const invoiceId = (0, uuid_1.v4)();
+        const userResult = yield datastore_1.default.query(`SELECT userId FROM users WHERE token = $1`, [token]);
+        if (userResult.rows.length === 0) {
+            throw new class_1.HttpError('Invalid or expired token.', 401);
+        }
+        const userId = userResult.rows[0].userid;
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, invoiceData, status)
+       VALUES ($1, $2, $3, $4, $5)`, [invoiceId, userId, invoiceXML, JSON.stringify(input), 'Generated']);
+        return {
+            output: invoiceXML,
+            message: 'Invoice generated successfully.',
+            code: 200,
+            invoiceId
         };
     });
 }

@@ -71,7 +71,7 @@ let invoiceId;
     const loginRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
     token = loginRes.token;
     yield (0, supertest_1.default)(server_1.app)
-        .post('/invoices')
+        .post('/v1/invoices')
         .set('token', token)
         .set('Content-Type', 'application/xml')
         .send(validxml);
@@ -81,40 +81,40 @@ let invoiceId;
 (0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
     yield datastore_1.default.end();
 }), 30000);
-(0, globals_1.describe)('DELETE /invoices/:id', () => {
+(0, globals_1.describe)('DELETE /v1/invoices/:id', () => {
     (0, globals_1.test)('Successfully deletes a draft invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`)
+            .delete(`/v1/invoices/${invoiceId}`)
             .set('token', token);
         (0, globals_1.expect)(res.body).toStrictEqual({ message: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
     (0, globals_1.test)('Invoice no longer exists after deletion', () => __awaiter(void 0, void 0, void 0, function* () {
         yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`)
+            .delete(`/v1/invoices/${invoiceId}`)
             .set('token', token);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}`)
+            .get(`/v1/invoices/${invoiceId}`)
             .set('token', token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
     }));
     (0, globals_1.test)('No token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`);
+            .delete(`/v1/invoices/${invoiceId}`);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
     (0, globals_1.test)('Invalid token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`)
+            .delete(`/v1/invoices/${invoiceId}`)
             .set('token', 'invalidtoken');
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
     (0, globals_1.test)('Invoice not found returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/00000000-0000-0000-0000-000000000000`)
+            .delete(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
             .set('token', token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
@@ -124,7 +124,7 @@ let invoiceId;
         yield (0, auth_1.authRegister)(otherEmail, 'correctpassword123');
         const otherLogin = yield (0, auth_1.authLogin)(otherEmail, 'correctpassword123');
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`)
+            .delete(`/v1/invoices/${invoiceId}`)
             .set('token', otherLogin.token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
@@ -132,7 +132,7 @@ let invoiceId;
     (0, globals_1.test)('Finalised invoice returns 409', () => __awaiter(void 0, void 0, void 0, function* () {
         yield datastore_1.default.query(`UPDATE invoices SET status = 'Sent' WHERE invoiceId = $1`, [invoiceId]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .delete(`/invoices/${invoiceId}`)
+            .delete(`/v1/invoices/${invoiceId}`)
             .set('token', token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(409);

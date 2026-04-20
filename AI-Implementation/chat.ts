@@ -18,7 +18,7 @@ You help users with:
 - Australian invoicing regulations and requirements
 Keep responses concise, professional, and relevant to invoicing.`;
 
-async function getUserFromToken(token: string) {
+export async  function getUserFromToken(token: string) {
   const decoded = jwt.decode(token) as { userId: string };
   const result = await pool.query(
     `SELECT userId, tier, message_count, last_reset_date FROM users WHERE userId = $1`,
@@ -30,7 +30,7 @@ async function getUserFromToken(token: string) {
   return result.rows[0];
 }
 
-async function resetMessageCountIfNeeded(userId: string) {
+export async function resetMessageCountIfNeeded(userId: string) {
   const result = await pool.query(
     `UPDATE users SET message_count = 0, last_reset_date = CURRENT_DATE 
      WHERE userId = $1 AND last_reset_date < CURRENT_DATE
@@ -40,7 +40,7 @@ async function resetMessageCountIfNeeded(userId: string) {
   return result.rows.length > 0 ? 0 : null;
 }
 
-async function getChatHistory(userId: string) {
+export async function getChatHistory(userId: string) {
   const result = await pool.query(
     `SELECT role, content FROM chat_history WHERE userId = $1 ORDER BY createdAt ASC`,
     [userId]

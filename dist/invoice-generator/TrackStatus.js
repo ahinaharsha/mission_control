@@ -17,6 +17,7 @@ exports.updateStatus = updateStatus;
 const xml_js_1 = require("xml-js");
 const datastore_1 = __importDefault(require("../AWS/datastore"));
 const class_1 = require("../class");
+const auth_1 = require("../AWS/auth/auth");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 function getText(node) {
     if (!node) {
@@ -30,9 +31,7 @@ function getText(node) {
 function getStatus(invoiceId, token) {
     return __awaiter(this, void 0, void 0, function* () {
         //Returns the status of the invoice with the given ID. Possible statuses: "Generated", "InProgress", "Sent", "Paid", "Overdue", "Deleted"
-        if (!token) {
-            throw new class_1.HttpError('Not logged in.', 401);
-        }
+        (0, auth_1.authenticate)(token);
         const decoded = jsonwebtoken_1.default.decode(token);
         const userId = decoded.userId;
         const invoiceResult = yield datastore_1.default.query(`SELECT userid,invoiceXML,status FROM invoices WHERE invoiceId = $1`, [invoiceId]);
@@ -49,7 +48,7 @@ function getStatus(invoiceId, token) {
         // Extract due date from invoice XML
         const dueDateStr = getText(inv['cbc:DueDate']);
         let currentStatus = invoice.status;
-        if (currentStatus === 'overdue') {
+        if (currentStatus === 'Overdue') {
             return currentStatus;
         }
         // If invoice is not yet paid or deleted, check if it's overdue
@@ -70,9 +69,7 @@ function getStatus(invoiceId, token) {
 }
 function updateStatus(invoiceId, status, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!token) {
-            throw new class_1.HttpError('Not logged in.', 401);
-        }
+        (0, auth_1.authenticate)(token);
         const decoded = jsonwebtoken_1.default.decode(token);
         // Verify status is valid
         const validStatuses = ['Generated', 'InProgress', 'Sent', 'Paid', 'Overdue', 'Deleted'];

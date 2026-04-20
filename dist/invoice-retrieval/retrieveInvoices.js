@@ -15,20 +15,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.retrieveInvoices = retrieveInvoices;
 const datastore_1 = __importDefault(require("../AWS/datastore"));
 const class_1 = require("../class");
-function retrieveInvoices(userId) {
+const auth_1 = require("../AWS/auth/auth");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+function retrieveInvoices(invoiceId, token) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const result = yield datastore_1.default.query('SELECT invoiceId, userId, invoiceXML as xml, status FROM invoices WHERE userId = $1', [userId]);
-            return result.rows.map(row => ({
-                invoiceId: row.invoiceid,
-                userId: row.userid,
-                xml: row.xml,
-                status: row.status
-            }));
+        (0, auth_1.authenticate)(token);
+        const decoded = jsonwebtoken_1.default.decode(token);
+        const userId = decoded.userId;
+        const result = yield datastore_1.default.query('SELECT invoiceId, userId, invoiceXML as xml, invoiceData, status FROM invoices WHERE invoiceId = $1', [invoiceId]);
+        if (result.rows.length === 0) {
+            throw new class_1.HttpError('Invoice not found.', 404);
         }
-        catch (error) {
-            console.error('Error retrieving invoices:', error);
-            throw new class_1.HttpError('Failed to retrieve invoices', 500);
+        const invoice = result.rows[0];
+        if (invoice.userid !== userId) {
+            throw new class_1.HttpError('Forbidden.', 403);
         }
+        return {
+            invoiceId: invoice.invoiceid,
+            userId: invoice.userid,
+            xml: invoice.xml,
+            invoicedata: invoice.invoicedata,
+            status: invoice.status
+        };
     });
 }

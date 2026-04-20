@@ -71,7 +71,7 @@ let invoiceId;
     const loginRes = yield (0, auth_1.authLogin)(testEmail, 'correctpassword123');
     token = loginRes.token;
     yield (0, supertest_1.default)(server_1.app)
-        .post('/invoices')
+        .post('/v1/invoices')
         .set('token', token)
         .set('Content-Type', 'application/xml')
         .send(validxml);
@@ -81,12 +81,20 @@ let invoiceId;
 (0, globals_1.afterAll)(() => __awaiter(void 0, void 0, void 0, function* () {
     yield datastore_1.default.end();
 }), 30000);
-(0, globals_1.describe)('GET /invoices/:id/pdf', () => {
+(0, globals_1.describe)('GET /v1/invoices/:id/pdf', () => {
     (0, globals_1.test)('Returns PDF even with missing XML fields', () => __awaiter(void 0, void 0, void 0, function* () {
         const incompleteXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`;
         yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('11111111-1111-1111-1111-111111111111', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, incompleteXML]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/11111111-1111-1111-1111-111111111111/pdf`)
+            .get(`/v1/invoices/11111111-1111-1111-1111-111111111111/pdf`)
+            .set('token', token);
+        (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
+    }));
+    (0, globals_1.test)('Returns PDF with non-standard XML root element', () => __awaiter(void 0, void 0, void 0, function* () {
+        const nonStandardXML = `<?xml version="1.0" encoding="UTF-8"?><CustomInvoice></CustomInvoice>`;
+        yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('88888888-8888-8888-8888-888888888888', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, nonStandardXML]);
+        const res = yield (0, supertest_1.default)(server_1.app)
+            .get(`/v1/invoices/88888888-8888-8888-8888-888888888888/pdf`)
             .set('token', token);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
@@ -94,13 +102,13 @@ let invoiceId;
         const emptyTagsXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice><cbc:ID></cbc:ID></Invoice>`;
         yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('22222222-2222-2222-2222-222222222222', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, emptyTagsXML]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/22222222-2222-2222-2222-222222222222/pdf`)
+            .get(`/v1/invoices/22222222-2222-2222-2222-222222222222/pdf`)
             .set('token', token);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
     (0, globals_1.test)('Returns 200 and a PDF for a valid invoice', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/pdf`)
+            .get(`/v1/invoices/${invoiceId}/pdf`)
             .set('token', token);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
         (0, globals_1.expect)(res.headers['content-type']).toContain('application/pdf');
@@ -129,26 +137,26 @@ let invoiceId;
   </Invoice>`;
         yield datastore_1.default.query(`INSERT INTO invoices (invoiceId, userId, invoiceXML, status) VALUES ('33333333-3333-3333-3333-333333333333', (SELECT userId FROM users WHERE token = $1), $2, 'Generated')`, [token, multiLineXML]);
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/33333333-3333-3333-3333-333333333333/pdf`)
+            .get(`/v1/invoices/33333333-3333-3333-3333-333333333333/pdf`)
             .set('token', token);
         (0, globals_1.expect)(res.statusCode).toStrictEqual(200);
     }));
     (0, globals_1.test)('No token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/pdf`);
+            .get(`/v1/invoices/${invoiceId}/pdf`);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
     (0, globals_1.test)('Invalid token returns 401', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/pdf`)
+            .get(`/v1/invoices/${invoiceId}/pdf`)
             .set('token', 'invalidtoken');
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(401);
     }));
     (0, globals_1.test)('Invoice not found returns 404', () => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/00000000-0000-0000-0000-000000000000/pdf`)
+            .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/pdf`)
             .set('token', token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(404);
@@ -158,7 +166,7 @@ let invoiceId;
         yield (0, auth_1.authRegister)(otherEmail, 'correctpassword123');
         const otherLogin = yield (0, auth_1.authLogin)(otherEmail, 'correctpassword123');
         const res = yield (0, supertest_1.default)(server_1.app)
-            .get(`/invoices/${invoiceId}/pdf`)
+            .get(`/v1/invoices/${invoiceId}/pdf`)
             .set('token', otherLogin.token);
         (0, globals_1.expect)(res.body).toStrictEqual({ error: globals_1.expect.any(String) });
         (0, globals_1.expect)(res.statusCode).toStrictEqual(403);
