@@ -1,4 +1,5 @@
 .vercel
 .env*.local
 swagger.json
+.env
 coverage/
