@@ -62,7 +62,7 @@ beforeEach(async () => {
   token = loginRes.token;
 
   await request(app)
-    .post('/invoices')
+    .post('/v1/invoices')
     .set('token', token)
     .set('Content-Type', 'application/xml')
     .send(validxml);
@@ -77,10 +77,10 @@ afterAll(async () => {
   await pool.end();
 }, 30000);
 
-describe('DELETE /invoices/:id', () => {
+describe('DELETE /v1/invoices/:id', () => {
   test('Successfully deletes a draft invoice', async () => {
     const res = await request(app)
-      .delete(`/invoices/${invoiceId}`)
+      .delete(`/v1/invoices/${invoiceId}`)
       .set('token', token);
     expect(res.body).toStrictEqual({ message: expect.any(String) });
     expect(res.statusCode).toStrictEqual(200);
@@ -88,10 +88,10 @@ describe('DELETE /invoices/:id', () => {
 
   test('Invoice no longer exists after deletion', async () => {
     await request(app)
-      .delete(`/invoices/${invoiceId}`)
+      .delete(`/v1/invoices/${invoiceId}`)
       .set('token', token);
     const res = await request(app)
-      .get(`/invoices/${invoiceId}`)
+      .get(`/v1/invoices/${invoiceId}`)
       .set('token', token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -99,14 +99,14 @@ describe('DELETE /invoices/:id', () => {
 
   test('No token returns 401', async () => {
     const res = await request(app)
-      .delete(`/invoices/${invoiceId}`);
+      .delete(`/v1/invoices/${invoiceId}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
 
   test('Invalid token returns 401', async () => {
     const res = await request(app)
-      .delete(`/invoices/${invoiceId}`)
+      .delete(`/v1/invoices/${invoiceId}`)
       .set('token', 'invalidtoken');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -114,7 +114,7 @@ describe('DELETE /invoices/:id', () => {
 
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
-      .delete(`/invoices/00000000-0000-0000-0000-000000000000`)
+      .delete(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
       .set('token', token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -125,7 +125,7 @@ describe('DELETE /invoices/:id', () => {
     await authRegister(otherEmail, 'correctpassword123');
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
     const res = await request(app)
-      .delete(`/invoices/${invoiceId}`)
+      .delete(`/v1/invoices/${invoiceId}`)
       .set('token', otherLogin.token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
@@ -137,7 +137,7 @@ describe('DELETE /invoices/:id', () => {
       [invoiceId]
     );
     const res = await request(app)
-      .delete(`/invoices/${invoiceId}`)
+      .delete(`/v1/invoices/${invoiceId}`)
       .set('token', token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(409);
