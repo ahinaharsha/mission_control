@@ -6,3 +6,5 @@ coverage/
 node_modules/
 frontend/invoicegen-frontend/node_modules/
 postgresql-installer.exe
+postgresql-15.6-1-windows-x64.exe
+postgresql-portable.zip
