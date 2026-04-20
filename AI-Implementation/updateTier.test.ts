@@ -45,7 +45,7 @@ describe('PUT /v1/users/tier', () => {
     expect(res.body.tier).toBe('standard');
   });
 
-  test('Invalid tier returns 400', async () => {
+  test('Invalid tier', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
       .set('token', token)
@@ -54,7 +54,7 @@ describe('PUT /v1/users/tier', () => {
     expect(res.statusCode).toStrictEqual(400);
   });
 
-  test('Missing tier returns 400', async () => {
+  test('Missing tier', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
       .set('token', token)
@@ -63,7 +63,7 @@ describe('PUT /v1/users/tier', () => {
     expect(res.statusCode).toStrictEqual(400);
   });
 
-  test('No token returns 401', async () => {
+  test('No token', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
       .send({ tier: 'pro' });
@@ -71,7 +71,7 @@ describe('PUT /v1/users/tier', () => {
     expect(res.statusCode).toStrictEqual(401);
   });
 
-  test('Invalid token returns 401', async () => {
+  test('Invalid token', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
       .set('token', 'invalidtoken')
@@ -94,7 +94,7 @@ describe('PUT /v1/users/tier', () => {
     expect(result.rows[0].tier).toBe('pro');
   });
 
-  test('User not found returns 404', async () => {
+  test('User not found', async () => {
     const decoded = require('jsonwebtoken').decode(token) as { userId: string };
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)

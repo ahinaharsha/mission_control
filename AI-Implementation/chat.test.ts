@@ -99,7 +99,7 @@ describe('POST /v1/ai/chat', () => {
     expect(result.rows.length).toStrictEqual(0);
   });
 
-  test('Missing message returns 400', async () => {
+  test('Missing message', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
       .set('token', token)
@@ -108,7 +108,7 @@ describe('POST /v1/ai/chat', () => {
     expect(res.statusCode).toStrictEqual(400);
   });
 
-  test('No token returns 401', async () => {
+  test('No token', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
       .send({ message: 'What is GST?' });
@@ -116,7 +116,7 @@ describe('POST /v1/ai/chat', () => {
     expect(res.statusCode).toStrictEqual(401);
   });
 
-  test('Invalid token returns 401', async () => {
+  test('Invalid token', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
       .set('token', 'invalidtoken')
@@ -139,7 +139,7 @@ describe('POST /v1/ai/chat', () => {
     expect(res.statusCode).toStrictEqual(429);
   });
 
-  test('User not found returns 404', async () => {
+  test('User not found', async () => {
     const decoded = require('jsonwebtoken').decode(token) as { userId: string };
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)
@@ -180,7 +180,7 @@ describe('DELETE /v1/ai/chat/history', () => {
     expect(res.statusCode).toStrictEqual(403);
   });
 
-  test('No token returns 401', async () => {
+  test('No token', async () => {
     const res = await request(app)
       .delete('/v1/ai/chat/history');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
