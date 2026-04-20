@@ -70,7 +70,7 @@ export default function UpdateInvoice({ token, onLogout, onNavigate }) {
     if (!invoiceId.trim()) { setFetchError('Please enter an invoice ID.'); return; }
     setFetching(true); setFetchError(''); setForm(null);
     try {
-      const res = await fetch(`http://localhost:3000/invoices/${invoiceId.trim()}`, { headers: { token } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}`, { headers: { token } });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invoice not found.');
       console.log('Retrieved invoice data:', data);
@@ -106,7 +106,7 @@ export default function UpdateInvoice({ token, onLogout, onNavigate }) {
     e.preventDefault();
     setSubmitError(''); setSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:3000/invoices/${invoiceId.trim()}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', token },
         body: JSON.stringify(form),
