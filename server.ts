@@ -16,7 +16,7 @@ import { getInvoicePDF } from './invoice-generator/generateInvoicePDF';
 import { deleteInvoice } from './invoice-deletion/invoiceDeletion';
 import { getStatus,updateStatus } from './invoice-generator/TrackStatus';
 import { updateInvoice } from './invoice-update/updateInvoice';
-import { chat, clearChatHistory } from './AI-Implementation/chat';
+import { chat, clearChatHistory, generateInvoiceFromAI, autofillInvoiceFromAI } from './AI-Implementation/chat';
 import { updateTier } from './AI-Implementation/updateTier';
 
 // Set up web app
@@ -254,6 +254,42 @@ app.put('/v1/users/tier', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Tier is required.' });
     }
     const result = await updateTier(token, tier);
+    return res.status(200).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/v1/ai/invoice/generate', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Description is required.' });
+    }
+    const result = await generateInvoiceFromAI(token, description);
+    return res.status(201).json(result);
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    console.error(e);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/v1/ai/invoice/autofill', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Description is required.' });
+    }
+    const result = await autofillInvoiceFromAI(token, description);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
