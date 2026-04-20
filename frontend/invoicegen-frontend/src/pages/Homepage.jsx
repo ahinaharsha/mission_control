@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import logo from '../assets/MCInvoicing_White.png';
 import QuickInvoiceSection from '../components/QuickInvoiceSection';
 import ConvertSection from '../components/ConvertSection';
+import ChatWidget from '../components/ChatWidget';
 
 const STATUS_META = {
   Generated:  { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', icon: '📄' },
@@ -99,6 +100,133 @@ function LoginPromptModal({ onClose, onNavigate }) {
     </div>
   );
 }
+
+// ─── Pricing Section ────────────────────────────────────────────────────────
+
+const PLANS = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: 'Free',
+    priceSub: 'forever',
+    accent: '#60a5fa',
+    accentBg: 'rgba(96,165,250,0.08)',
+    accentBorder: 'rgba(96,165,250,0.2)',
+    badge: null,
+    cta: 'Get started free',
+    ctaStyle: 'ghost',
+    features: [
+      { icon: '💬', label: 'General invoicing assistant', desc: 'Ask questions about invoicing, GST, Peppol and more.' },
+      { icon: '📊', label: '25 messages per day', desc: 'Daily limit resets at midnight. Sufficient for casual use.' },
+      { icon: '🕐', label: 'Session-only memory', desc: 'Chat history is cleared when you close the window.' },
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '$12',
+    priceSub: 'per month',
+    accent: '#00e891',
+    accentBg: 'rgba(0,232,145,0.07)',
+    accentBorder: 'rgba(0,232,145,0.25)',
+    badge: 'Most popular',
+    cta: 'Upgrade to Pro',
+    ctaStyle: 'solid',
+    features: [
+      { icon: '♾️', label: 'Unlimited messages', desc: 'No daily caps — chat as much as you need, any time.' },
+      { icon: '🧠', label: 'Persistent chat memory', desc: 'Conversation history saved across sessions in your account.' },
+      { icon: '⚡', label: 'AI invoice autofill', desc: 'Describe your invoice in plain English and the AI pre-fills the creation form with structured data.' },
+      { icon: '✏️', label: 'AI-assisted invoice updates', desc: 'Describe changes and the AI returns the exact fields to update — no manual editing required.' },
+    ],
+  },
+];
+
+function PricingSection({ onNavigate, token }) {
+  return (
+    <section style={pricing.section}>
+      <style>{`
+        @keyframes pricingFadeUp { from { opacity:0;transform:translateY(28px);} to { opacity:1;transform:translateY(0);} }
+        .plan-card { animation: pricingFadeUp 0.6s ease both; }
+        .plan-card:nth-child(2) { animation-delay: 0.12s; }
+        .plan-cta-solid:hover { background: #00c97a !important; }
+        .plan-cta-ghost:hover { background: rgba(96,165,250,0.12) !important; border-color: rgba(96,165,250,0.4) !important; }
+      `}</style>
+
+      <div style={pricing.header}>
+        <div style={pricing.eyebrow}>AI Chat Plans</div>
+        <h2 style={pricing.title}>Choose your plan</h2>
+        <p style={pricing.sub}>Upgrade anytime. All plans include access to the invoicing platform.</p>
+      </div>
+
+      <div style={pricing.grid}>
+        {PLANS.map((plan) => (
+          <div
+            key={plan.id}
+            className="plan-card"
+            style={{
+              ...pricing.card,
+              background: plan.ctaStyle === 'solid'
+                ? 'linear-gradient(160deg, #0d1a2e 0%, #0a1520 100%)'
+                : 'linear-gradient(160deg, #0b1525 0%, #080f1e 100%)',
+              borderColor: plan.accentBorder,
+              boxShadow: plan.ctaStyle === 'solid'
+                ? `0 0 0 1px ${plan.accentBorder}, 0 32px 80px rgba(0,0,0,0.5), 0 0 60px rgba(0,232,145,0.06)`
+                : '0 8px 40px rgba(0,0,0,0.35)',
+            }}
+          >
+            {plan.badge && (
+              <div style={{ ...pricing.badge, background: plan.accentBg, color: plan.accent, borderColor: plan.accentBorder }}>
+                {plan.badge}
+              </div>
+            )}
+
+            <div style={pricing.planName}>{plan.name}</div>
+            <div style={pricing.priceRow}>
+              <span style={{ ...pricing.price, color: plan.accent }}>{plan.price}</span>
+              <span style={pricing.priceSub}>{plan.priceSub}</span>
+            </div>
+
+            <div style={pricing.divider} />
+
+            <ul style={pricing.featureList}>
+              {plan.features.map((f, i) => (
+                <li key={i} style={pricing.featureItem}>
+                  <span style={pricing.featureIcon}>{f.icon}</span>
+                  <div>
+                    <div style={pricing.featureLabel}>{f.label}</div>
+                    <div style={pricing.featureDesc}>{f.desc}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              className={plan.ctaStyle === 'solid' ? 'plan-cta-solid' : 'plan-cta-ghost'}
+              style={{
+                ...pricing.cta,
+                ...(plan.ctaStyle === 'solid'
+                  ? { background: '#00e891', color: '#050f0a', border: 'none' }
+                  : { background: 'transparent', color: 'rgba(255,255,255,0.7)', border: `1px solid ${plan.accentBorder}` })
+              }}
+              onClick={() => {
+                if (plan.id === 'standard') {
+                  if (!token) onNavigate('register');
+                  else onNavigate('app');
+                } else {
+                  onNavigate('billing');
+                }
+              }}
+            >
+              {plan.cta}
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── Home ────────────────────────────────────────────────────────────────────
 
 export default function Home({ onNavigate, token }) {
   const canvasRef = useRef(null);
@@ -263,11 +391,19 @@ export default function Home({ onNavigate, token }) {
 
       <ConvertSection />
 
+      {/* Pricing Section */}
+      <PricingSection onNavigate={onNavigate} token={token} />
+
       {showTrack === true && <TrackModal token={token} onClose={() => setShowTrack(false)} />}
       {showTrack === 'login' && <LoginPromptModal onClose={() => setShowTrack(false)} onNavigate={onNavigate} />}
+
+      {/* Floating Chat Widget - rendered last so it's always on top */}
+      <ChatWidget token={token} onNavigate={onNavigate} />
     </div>
   );
 }
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = {
   page: { minHeight: '100vh', width: '100%', flex: 1, background: 'linear-gradient(180deg, #030810 0%, #060e18 35%, #040a14 100%)', display: 'flex', flexDirection: 'column' },
@@ -293,6 +429,28 @@ const styles = {
   mockupLabel: { fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)', display: 'block', marginBottom: 6 },
   mockupLine: { height: 8, background: 'rgba(255,255,255,0.08)', borderRadius: 4, marginBottom: 6, width: '80%' },
   mockupDivider: { height: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 0' },
+};
+
+const pricing = {
+  section: { padding: '80px 24px 100px', maxWidth: 900, margin: '0 auto', width: '100%', boxSizing: 'border-box' },
+  header: { textAlign: 'center', marginBottom: 52 },
+  eyebrow: { display: 'inline-block', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#00e891', background: 'rgba(0,232,145,0.08)', border: '1px solid rgba(0,232,145,0.2)', borderRadius: 999, padding: '4px 14px', marginBottom: 16 },
+  title: { fontSize: '2.1rem', fontWeight: 700, color: '#fff', margin: '0 0 12px', lineHeight: 1.15 },
+  sub: { color: 'rgba(255,255,255,0.45)', fontSize: '1rem', margin: 0 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 },
+  card: { position: 'relative', border: '1px solid', borderRadius: 20, padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 0 },
+  badge: { display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', border: '1px solid', borderRadius: 999, padding: '3px 12px', marginBottom: 16, alignSelf: 'flex-start' },
+  planName: { color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 },
+  priceRow: { display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 24 },
+  price: { fontSize: '2.5rem', fontWeight: 800, lineHeight: 1 },
+  priceSub: { color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' },
+  divider: { height: 1, background: 'rgba(255,255,255,0.07)', marginBottom: 24 },
+  featureList: { listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 16 },
+  featureItem: { display: 'flex', gap: 12, alignItems: 'flex-start' },
+  featureIcon: { fontSize: '1.1rem', flexShrink: 0, marginTop: 1 },
+  featureLabel: { color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem', fontWeight: 600, marginBottom: 2 },
+  featureDesc: { color: 'rgba(255,255,255,0.38)', fontSize: '0.8rem', lineHeight: 1.5 },
+  cta: { display: 'block', width: '100%', padding: '12px 0', borderRadius: 12, fontSize: '0.95rem', fontWeight: 700, cursor: 'pointer', textAlign: 'center', transition: 'background 0.2s, border-color 0.2s', marginTop: 'auto' },
 };
 
 const modalStyles = {
