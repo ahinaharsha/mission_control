@@ -20,7 +20,7 @@ export function TrackModal({ token, onClose }) {
     if (!invoiceId.trim()) { setError('Please enter an Invoice ID.'); return; }
     setLoading(true); setError(''); setStatus(null);
     try {
-      const res = await fetch(`/invoices/${invoiceId.trim()}/status`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}/status`, {
         headers: { token },
       });
       if (!res.ok) {

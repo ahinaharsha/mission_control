@@ -24,7 +24,7 @@ function TrackModal({ token, onClose }) {
     if (!invoiceId.trim()) { setError('Please enter an Invoice ID.'); return; }
     setLoading(true); setError(''); setStatus(null);
     try {
-      const res = await fetch(`/invoices/${invoiceId.trim()}/status`, { headers: { token } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}/status`, { headers: { token } });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Error ${res.status}`);
@@ -194,7 +194,7 @@ function InvoiceList({ onNavigate, token }) {
     setConfirmId(null);
     setError('');
     try {
-      const res = await fetch(`http://localhost:3000/invoices/${invoiceId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId}`, {
         method: 'DELETE',
         headers: { token },
       });
