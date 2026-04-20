@@ -268,3 +268,70 @@ export async function autofillInvoiceFromAI(token: string | undefined, descripti
     invoiceData: invoiceInput
   };
 }
+
+export async function updateInvoiceFromAI(token: string | undefined, invoiceId: string, description: string) {
+  authenticate(token);
+
+  const user = await getUserFromToken(token as string);
+  const userId = user.userid;
+  const tier = user.tier;
+
+  if (tier !== 'pro') {
+    throw new HttpError('AI invoice update is only available for Pro users.', 403);
+  }
+
+  // Fetch existing invoice
+  const invoiceResult = await pool.query(
+    `SELECT invoiceData, status, userId FROM invoices WHERE invoiceId = $1`,
+    [invoiceId]
+  );
+
+  if (invoiceResult.rows.length === 0) {
+    throw new HttpError('Invoice not found.', 404);
+  }
+
+  if (invoiceResult.rows[0].userid !== userId) {
+    throw new HttpError('Forbidden.', 403);
+  }
+
+  const blockedStatuses = ['Sent', 'Paid', 'Overdue', 'Deleted'];
+  if (blockedStatuses.includes(invoiceResult.rows[0].status)) {
+    throw new HttpError('Cannot update a finalised invoice.', 409);
+  }
+
+  const existingData = invoiceResult.rows[0].invoicedata;
+
+  // Call Anthropic API with existing invoice data as context
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    system: INVOICE_GENERATION_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: `Here is the existing invoice data: ${JSON.stringify(existingData)}. 
+        Please update it based on this instruction: ${description}. 
+        Return the complete updated invoice as a JSON object only.`
+      }
+    ]
+  });
+
+  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+
+  // Parse the JSON response
+  let updatedInput: any;
+  try {
+    const clean = responseText.replace(/```json|```/g, '').trim();
+    updatedInput = JSON.parse(clean);
+    if (updatedInput.from?.dueDate) {
+      updatedInput.from.dueDate = new Date(updatedInput.from.dueDate);
+    }
+  } catch (e) {
+    throw new HttpError('AI failed to generate valid invoice data. Please try again with more details.', 500);
+  }
+
+  return {
+    message: 'Invoice fields updated successfully. Please review and submit.',
+    invoiceData: updatedInput
+  };
+}
