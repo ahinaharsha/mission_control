@@ -62,7 +62,7 @@ beforeAll(async () => {
   token = loginRes.token;
 
   await request(app)
-    .post('/invoices')
+    .post('/v1/invoices')
     .set('token', token)
     .set('Content-Type', 'application/xml')
     .send(validxml);
@@ -77,7 +77,7 @@ afterAll(async () => {
   await pool.end();
 }, 30000);
 
-describe('GET /invoices/:id/pdf', () => {
+describe('GET /v1/invoices/:id/pdf', () => {
   test('Returns PDF even with missing XML fields', async () => {
   const incompleteXML = `<?xml version="1.0" encoding="UTF-8"?><Invoice></Invoice>`;
   await pool.query(
@@ -85,7 +85,7 @@ describe('GET /invoices/:id/pdf', () => {
     [token, incompleteXML]
   );
   const res = await request(app)
-    .get(`/invoices/11111111-1111-1111-1111-111111111111/pdf`)
+    .get(`/v1/invoices/11111111-1111-1111-1111-111111111111/pdf`)
     .set('token', token);
   expect(res.statusCode).toStrictEqual(200);
 });
@@ -97,7 +97,7 @@ test('Returns PDF with non-standard XML root element', async () => {
     [token, nonStandardXML]
   );
   const res = await request(app)
-    .get(`/invoices/88888888-8888-8888-8888-888888888888/pdf`)
+    .get(`/v1/invoices/88888888-8888-8888-8888-888888888888/pdf`)
     .set('token', token);
   expect(res.statusCode).toStrictEqual(200);
 });
@@ -109,14 +109,14 @@ test('Returns PDF with empty XML tags', async () => {
     [token, emptyTagsXML]
   );
   const res = await request(app)
-    .get(`/invoices/22222222-2222-2222-2222-222222222222/pdf`)
+    .get(`/v1/invoices/22222222-2222-2222-2222-222222222222/pdf`)
     .set('token', token);
   expect(res.statusCode).toStrictEqual(200);
 });
 
   test('Returns 200 and a PDF for a valid invoice', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}/pdf`)
+      .get(`/v1/invoices/${invoiceId}/pdf`)
       .set('token', token);
     expect(res.statusCode).toStrictEqual(200);
     expect(res.headers['content-type']).toContain('application/pdf');
@@ -149,21 +149,21 @@ test('Returns PDF with empty XML tags', async () => {
     [token, multiLineXML]
   );
   const res = await request(app)
-    .get(`/invoices/33333333-3333-3333-3333-333333333333/pdf`)
+    .get(`/v1/invoices/33333333-3333-3333-3333-333333333333/pdf`)
     .set('token', token);
   expect(res.statusCode).toStrictEqual(200);
 });
 
   test('No token returns 401', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}/pdf`);
+      .get(`/v1/invoices/${invoiceId}/pdf`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
 
   test('Invalid token returns 401', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}/pdf`)
+      .get(`/v1/invoices/${invoiceId}/pdf`)
       .set('token', 'invalidtoken');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -171,7 +171,7 @@ test('Returns PDF with empty XML tags', async () => {
 
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
-      .get(`/invoices/00000000-0000-0000-0000-000000000000/pdf`)
+      .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/pdf`)
       .set('token', token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -182,7 +182,7 @@ test('Returns PDF with empty XML tags', async () => {
     await authRegister(otherEmail, 'correctpassword123');
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
     const res = await request(app)
-      .get(`/invoices/${invoiceId}/pdf`)
+      .get(`/v1/invoices/${invoiceId}/pdf`)
       .set('token', otherLogin.token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);

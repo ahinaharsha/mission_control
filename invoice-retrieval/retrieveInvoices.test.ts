@@ -62,7 +62,7 @@ beforeAll(async () => {
   token = loginRes.token;
 
   const res = await request(app)
-    .post('/invoices')
+    .post('/v1/invoices')
     .set('token', token)
     .set('Content-Type', 'application/xml')
     .send(validxml);
@@ -74,10 +74,10 @@ afterAll(async () => {
   await pool.end();
 }, 30000);
 
-describe('GET /invoices/:id', () => {
+describe('GET /v1/invoices/:id', () => {
   test('Returns invoice for valid invoiceId', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}`)
+      .get(`/v1/invoices/${invoiceId}`)
       .set('token', token);
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.invoiceId).toStrictEqual(expect.any(String));
@@ -87,7 +87,7 @@ describe('GET /invoices/:id', () => {
 
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
-      .get(`/invoices/00000000-0000-0000-0000-000000000000`)
+      .get(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
       .set('token', token);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -95,14 +95,14 @@ describe('GET /invoices/:id', () => {
 
   test('No token returns 401', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}`);
+      .get(`/v1/invoices/${invoiceId}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
 
   test('Invalid token returns 401', async () => {
     const res = await request(app)
-      .get(`/invoices/${invoiceId}`)
+      .get(`/v1/invoices/${invoiceId}`)
       .set('token', 'invalidtoken');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -113,7 +113,7 @@ describe('GET /invoices/:id', () => {
   await authRegister(otherEmail, 'correctpassword123');
   const otherLogin = await authLogin(otherEmail, 'correctpassword123');
   const res = await request(app)
-    .get(`/invoices/${invoiceId}`)
+    .get(`/v1/invoices/${invoiceId}`)
     .set('token', otherLogin.token);
   expect(res.body).toStrictEqual({ error: expect.any(String) });
   expect(res.statusCode).toStrictEqual(403);
