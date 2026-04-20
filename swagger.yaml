@@ -504,6 +504,53 @@ paths:
         '404':
           description: User not found
 
+  /v1/ai/invoice/update/{id}:
+    post:
+      summary: Update an existing invoice using AI (Pro only)
+      tags: [AI]
+      parameters:
+        - $ref: '#/components/parameters/InvoiceId'
+        - in: header
+          name: token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+                  example: Change the customer name to Jane Smith and update the rate to $300 per hour
+      responses:
+        '200':
+          description: Updated invoice fields returned for review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  invoiceData:
+                    $ref: '#/components/schemas/InvoiceInput'
+        '400':
+          description: Bad request - missing description
+        '401':
+          description: Unauthorised
+        '403':
+          description: Forbidden - Pro tier required or invoice belongs to another user
+        '404':
+          description: Not found - invoice does not exist
+        '409':
+          description: Conflict - invoice is already finalised
+        '500':
+          description: AI failed to generate valid invoice data
+
 components:
 
   parameters:
