@@ -1,0 +1,26 @@
+tree 905b6f22c7b2d03d90014f57d051be1326fea1e2
+parent 7f22921d2acc12c09ee473bc800770cdb853ac58
+parent d1293cfc50aa34302095c50446f09cf0be3f6474
+author ahinaharsha <ahina.harsha@gmail.com> 1773627375 +1100
+committer GitHub <noreply@github.com> 1773627375 +1100
+gpgsig -----BEGIN PGP SIGNATURE-----
+ 
+ wsFcBAABCAAQBQJpt2fvCRC1aQ7uu5UhlAAAvIYQAH+Xd9QMKWYlX3BVxZsF5c1J
+ VdhSuZgUX16L5gXuNRRAAEDTU3sW+8xTWjg63MQd4QOdHzCc/Mzc7LpNDszU5lmP
+ qHcROqYJF/zsHjNrtaftEeW0ud4sx6veaubk2U+PTRIRe7g0a1Zw9LQ9uZIa+eUf
+ SEiLn8IxeCIlBOL9t1uICisBGacciY0CD/0/HskLnsIhBEgnKu2mi7n7B2KUEcUn
+ tuB4Zk5EGy12ryZqCrguyCvlBug3/6XhmhhFyTECZFqbRRpihTyys3JjwfM6tsym
+ LnluNR40GuQwYA1NClgHLU7zK+axgWEGKNPJi4reSK4wUFrMVPNRatdnfH35DPag
+ Cfpvfprf/9P4cCvyw+XWr4UtLsGE9TNViojTNocnP2N3j6rPOHLQkCyH6gmZEbH4
+ xFPXFaJGUjFz6YqKvKXaWP+4jLVTu2O3iG1iWU93UgsRqiMSrF3NXHd95hOFhS2B
+ Le9P4ZFLt4w0uJzrKMu7Lzic1zVhzNGr4/ub0+DuxPIpuE01X0UCE4tbKzgtz6VE
+ 0XPDQwtFCi7GKmCi1YnhRhPK8pApiERi65DkpG2WCGACEkPUyH6U3tyOEzdVjiaO
+ MAPDRLzbWX27YVlvPFP2W3HrjQwLBBwvUGO29dmZoBOksGOoYTgOajPIIe2H3iLi
+ nO7lb3BQyXw+BI2CkQc4
+ =h8IQ
+ -----END PGP SIGNATURE-----
+ 
+
+Merge pull request #33 from ahinaharsha/ahina/authentication
+
+Added the coverage folder to gitignore
