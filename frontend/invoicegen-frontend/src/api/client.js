@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export async function register(email, password) {
-  const res = await fetch(`${BASE_URL}/auth/register`, {
+  const res = await fetch(`${BASE_URL}/v1/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -12,7 +12,7 @@ export async function register(email, password) {
 }
 
 export async function login(email, password) {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
+  const res = await fetch(`${BASE_URL}/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -23,7 +23,7 @@ export async function login(email, password) {
 }
 
 export async function logout(token) {
-  const res = await fetch(`${BASE_URL}/auth/logout`, {
+  const res = await fetch(`${BASE_URL}/v1/auth/logout`, {
     method: 'POST',
     headers: { token },
   });
@@ -33,7 +33,7 @@ export async function logout(token) {
 }
 
 export async function createInvoice(xml, token) {
-  const res = await fetch(`${BASE_URL}/invoices`, {
+  const res = await fetch(`${BASE_URL}/v1/invoices`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/xml',
