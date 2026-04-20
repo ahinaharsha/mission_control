@@ -14,17 +14,17 @@ afterAll(async () => {
   await pool.end();
 }, 30000);
 
-describe('POST /auth/register', () => {
+describe('POST /v1/auth/register', () => {
   test('Successful registration', async () => {
     const res = await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     expect(res.statusCode).toStrictEqual(201);
   });
 
   test('Missing email', async () => {
     const res = await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: '', password: 'correctpassword123' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -32,7 +32,7 @@ describe('POST /auth/register', () => {
 
   test('Missing password', async () => {
     const res = await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: '' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -40,10 +40,10 @@ describe('POST /auth/register', () => {
 
   test('Email already in use', async () => {
     await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const res = await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -51,7 +51,7 @@ describe('POST /auth/register', () => {
 
   test('Registered user is stored in database', async () => {
     await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const result = await pool.query(
       'SELECT * FROM users WHERE email = $1',
@@ -77,13 +77,13 @@ describe('authRegister direct', () => {
   });
 });
 
-describe('POST /auth/login', () => {
+describe('POST /v1/auth/login', () => {
   test('Correct login info', async () => {
     await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const res = await request(app)
-      .post('/auth/login')
+      .post('/v1/auth/login')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     expect(res.body).toStrictEqual({ token: expect.any(String) });
     expect(res.statusCode).toStrictEqual(200);
@@ -91,7 +91,7 @@ describe('POST /auth/login', () => {
 
   test('Email does not exist', async () => {
     const res = await request(app)
-      .post('/auth/login')
+      .post('/v1/auth/login')
       .send({ email: 'wrong@gmail.com', password: 'correctpassword123' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -99,10 +99,10 @@ describe('POST /auth/login', () => {
 
   test('Password is incorrect', async () => {
     await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const res = await request(app)
-      .post('/auth/login')
+      .post('/v1/auth/login')
       .send({ email: 'test@gmail.com', password: 'wrongpassword123' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -110,7 +110,7 @@ describe('POST /auth/login', () => {
 
   test('Missing email', async () => {
     const res = await request(app)
-      .post('/auth/login')
+      .post('/v1/auth/login')
       .send({ email: '', password: 'correctpassword123' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -136,24 +136,24 @@ describe('authLogin direct', () => {
   });
 });
 
-describe('POST /auth/logout', () => {
+describe('POST /v1/auth/logout', () => {
   test('Successful logout', async () => {
     await request(app)
-      .post('/auth/register')
+      .post('/v1/auth/register')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const loginRes = await request(app)
-      .post('/auth/login')
+      .post('/v1/auth/login')
       .send({ email: 'test@gmail.com', password: 'correctpassword123' });
     const { token } = loginRes.body;
     const res = await request(app)
-      .post('/auth/logout')
+      .post('/v1/auth/logout')
       .set('token', token);
     expect(res.statusCode).toStrictEqual(200);
   });
 
   test('No token provided', async () => {
     const res = await request(app)
-      .post('/auth/logout');
+      .post('/v1/auth/logout');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });

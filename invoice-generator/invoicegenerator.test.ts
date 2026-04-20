@@ -207,7 +207,7 @@ describe("Invoice Generator", () => {
     const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
     const res = await request(app)
-      .post('/invoices')
+      .post('/v1/invoices')
       .set('token', tokenRes.token)
       .set('Content-Type', 'application/xml')
       .send(validxml);
@@ -224,7 +224,7 @@ describe("Invoice Generator", () => {
     const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
     const res = await request(app)
-      .post('/invoices')
+      .post('/v1/invoices')
       .set('token', tokenRes.token)
       .set('Content-Type', 'application/xml')
       .send(invalidxml);
@@ -239,7 +239,7 @@ describe("Invoice Generator", () => {
     const tokenRes = await authLogin(testEmail, 'correctpassword123');
 
     const res = await request(app)
-      .post('/invoices')
+      .post('/v1/invoices')
       .set('token', tokenRes.token)
       .set('Content-Type', 'application/xml')
       .send(noxml);
@@ -250,7 +250,7 @@ describe("Invoice Generator", () => {
 
   test("Not logged in", async () => {
     const res = await request(app)
-      .post('/invoices')
+      .post('/v1/invoices')
       .set('Content-Type', 'application/xml')
       .send(validxml);
 
