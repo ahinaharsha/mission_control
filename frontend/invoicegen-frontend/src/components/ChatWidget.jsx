@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 const SYSTEM_GREETING = "Hello! How can I help you today? I can assist with invoicing questions, Peppol UBL standards, GST, and more.";
 
@@ -68,7 +69,6 @@ export default function ChatWidget({ token, onNavigate }) {
     if (href === '#billing') { onNavigate?.('billing'); setOpen(false); }
   };
 
-  // Simple markdown-ish renderer for assistant messages
   const renderContent = (content) => {
     return content.split(/(\[.*?\]\(.*?\))/).map((part, i) => {
       const match = part.match(/\[(.*?)\]\((.*?)\)/);
@@ -100,12 +100,17 @@ export default function ChatWidget({ token, onNavigate }) {
         .chat-msg-user { animation: chatSlideUp 0.25s ease; }
         .chat-msg-assistant { animation: chatSlideUp 0.3s ease; }
         .chat-close:hover { color: rgba(255,255,255,0.8) !important; }
+        .bot-bubble-markdown p { margin: 0 0 6px; }
+        .bot-bubble-markdown p:last-child { margin: 0; }
+        .bot-bubble-markdown ul, .bot-bubble-markdown ol { margin: 4px 0; padding-left: 16px; }
+        .bot-bubble-markdown li { margin-bottom: 2px; }
+        .bot-bubble-markdown h1, .bot-bubble-markdown h2, .bot-bubble-markdown h3 { font-size: 0.9rem; margin: 6px 0 4px; }
+        .bot-bubble-markdown strong { color: #fff; }
+        .bot-bubble-markdown code { background: rgba(255,255,255,0.1); padding: 1px 4px; border-radius: 4px; font-size: 0.8rem; }
       `}</style>
 
-      {/* Floating panel */}
       {open && (
         <div style={w.panel}>
-          {/* Header */}
           <div style={w.header}>
             <div style={w.headerLeft}>
               <div style={w.avatar}>
@@ -121,7 +126,6 @@ export default function ChatWidget({ token, onNavigate }) {
             <button className="chat-close" style={w.closeBtn} onClick={() => setOpen(false)}>✕</button>
           </div>
 
-          {/* Messages */}
           <div style={w.messages}>
             {messages.map((msg, i) => (
               <div key={i} className={`chat-msg-${msg.role}`} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
@@ -133,7 +137,9 @@ export default function ChatWidget({ token, onNavigate }) {
                   </div>
                 )}
                 <div style={msg.role === 'user' ? w.userBubble : w.botBubble}>
-                  {renderContent(msg.content)}
+                  {msg.role === 'assistant'
+                    ? <div className="bot-bubble-markdown"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                    : renderContent(msg.content)}
                 </div>
               </div>
             ))}
@@ -160,7 +166,6 @@ export default function ChatWidget({ token, onNavigate }) {
             <div ref={bottomRef} />
           </div>
 
-          {/* Footer */}
           <div style={w.footer}>
             {remaining !== null && remaining <= 5 && (
               <div style={w.limitBanner}>
@@ -197,7 +202,6 @@ export default function ChatWidget({ token, onNavigate }) {
         </div>
       )}
 
-      {/* FAB button */}
       <button
         className="chat-fab"
         style={{ ...w.fab, background: open ? '#374151' : '#4f46e5' }}
