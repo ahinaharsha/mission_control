@@ -1,0 +1,42 @@
+[33mcommit 7aa2549a5bef5a87318ad7ff42c7a525e80c87af[m
+Merge: 39e1aa6 b4ae49c
+Author: Jaswanth-coder76 <151131499+Jaswanth-coder76@users.noreply.github.com>
+Date:   Mon Apr 20 09:36:45 2026 +1000
+
+    Merge pull request #71 from ahinaharsha/ahina/AI
+    
+    Ahina/ai
+
+[33mcommit b4ae49cffede5ad4022efcf8e05b4d4b50882bfe[m
+Author: Ahina <ahina.harsha@gmail.com>
+Date:   Fri Apr 17 19:16:25 2026 +1000
+
+    Removed .env from tracking
+
+[33mcommit d9c5dde7cb0dcbfc5cf9a2d2c166ce4a22add98c[m
+Author: Ahina <ahina.harsha@gmail.com>
+Date:   Fri Apr 17 19:12:37 2026 +1000
+
+    Implemented the AI endpoint for users to chat to whenever they have questions about minvoicing. I added a standard and pro sections. They have their test files (all tests pass)  and server implementation. I also updated the swagger to include this endpoint, and also added v1 routes to all functions in swagger and server.ts.
+
+[33mcommit af161e2fe6a92b5b80a67d6199260a83b11af8a9[m[33m ([m[1;31morigin/invoicegenerator[m[33m)[m
+Merge: daa9fd7 d0fc01f
+Author: Jaswanth-coder76 <151131499+Jaswanth-coder76@users.noreply.github.com>
+Date:   Thu Mar 12 21:43:29 2026 +1100
+
+    Merge branch 'main' into invoicegenerator
+
+[33mcommit 8337cf5346179ab350ef1bfe93f00e363783329d[m
+Merge: dd4dd24 a985d6b
+Author: kishupoo <jaidyn.chan@gmail.com>
+Date:   Thu Mar 12 15:05:43 2026 +1100
+
+    Merge pull request #15 from ahinaharsha/ahina/AWS
+    
+    Ahina/aws
+
+[33mcommit a985d6bb05903a190864a6ec0b4736c22b95edd2[m
+Author: Ahina <z5494885@ad.unsw.edu.au>
+Date:   Thu Mar 12 15:02:32 2026 +1100
+
+    Added datastore.ts and setupDb.ts for our AWS database.
