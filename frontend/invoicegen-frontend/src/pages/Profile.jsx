@@ -1,6 +1,5 @@
 // Profile.jsx
-import { useState, useRef } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { useState, useRef, useEffect } from 'react';
 import logo from '../assets/MCInvoicing_White.png';
 import { logout } from '../api/client';
 
@@ -91,13 +90,10 @@ export default function Profile({ onNavigate, onLogout, token }) {
         .logout-btn:hover { background: rgba(255,80,80,0.15) !important; color: #ff6b6b !important; }
         @keyframes modalIn { from { opacity:0; transform:translateY(24px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes statusPop { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
-      `}</style>
-
-      <style>{`
-        .nav-link:hover { color: rgba(255,255,255,0.9) !important; text-shadow: 0 0 12px rgba(255,255,255,0.3); }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .page-fade { animation: fadeIn 0.5s ease forwards; }
       `}</style>
+
       <nav style={styles.nav}>
         <img src={logo} alt="MC Invoicing" style={{ ...styles.logo, cursor: 'pointer' }} onClick={() => onNavigate('home')} />
         <div style={styles.navLinks}>
@@ -181,13 +177,29 @@ function ConfirmModal({ onConfirm, onCancel }) {
 }
 
 function InvoiceList({ onNavigate, token }) {
-  const decoded = jwtDecode(token);
-  const userKey = `invoices_${decoded.userId}`;
-
-  const [invoices, setInvoices] = useState(JSON.parse(localStorage.getItem(userKey) || '[]'));
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchInvoices() {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices`, {
+          headers: { token }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch invoices.');
+        setInvoices(data.invoices);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInvoices();
+  }, [token]);
 
   async function handleDelete(invoiceId) {
     setDeletingId(invoiceId);
@@ -198,21 +210,18 @@ function InvoiceList({ onNavigate, token }) {
         method: 'DELETE',
         headers: { token },
       });
-
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to delete invoice.');
-      }
-
-      const updated = invoices.filter(inv => inv.id !== invoiceId);
-      localStorage.setItem(userKey, JSON.stringify(updated));
-      setInvoices(updated);
+      if (!res.ok) throw new Error(data.error || 'Failed to delete invoice.');
+      setInvoices(prev => prev.filter(inv => inv.invoiceid !== invoiceId));
     } catch (err) {
       setError(err.message);
     } finally {
       setDeletingId(null);
     }
+  }
+
+  if (loading) {
+    return <div style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '40px 0' }}>Loading invoices...</div>;
   }
 
   if (invoices.length === 0) {
@@ -233,26 +242,29 @@ function InvoiceList({ onNavigate, token }) {
         />
       )}
       {error && <div style={styles.errorBox}>{error}</div>}
-      {invoices.map((inv, i) => (
-        <div key={i} style={styles.invoiceRow}>
-          <div>
-            <p style={styles.invoiceCustomer}>{inv.customer || 'Unknown customer'}</p>
-            <p style={styles.invoiceDate}>{inv.createdAt}</p>
-            <p style={styles.invoiceId}>{inv.id}</p>
+      {invoices.map((inv, i) => {
+        const invoiceData = typeof inv.invoicedata === 'string' ? JSON.parse(inv.invoicedata) : inv.invoicedata;
+        return (
+          <div key={i} style={styles.invoiceRow}>
+            <div>
+              <p style={styles.invoiceCustomer}>{invoiceData?.customer?.fullName || 'Unknown customer'}</p>
+              <p style={styles.invoiceDate}>{new Date(inv.createdat).toLocaleDateString()}</p>
+              <p style={styles.invoiceId}>{inv.invoiceid}</p>
+            </div>
+            <button
+              style={{
+                ...styles.deleteBtn,
+                opacity: deletingId === inv.invoiceid ? 0.5 : 1,
+                cursor: deletingId === inv.invoiceid ? 'not-allowed' : 'pointer',
+              }}
+              onClick={() => setConfirmId(inv.invoiceid)}
+              disabled={deletingId === inv.invoiceid}
+            >
+              {deletingId === inv.invoiceid ? 'Deleting...' : 'Delete'}
+            </button>
           </div>
-          <button
-            style={{
-              ...styles.deleteBtn,
-              opacity: deletingId === inv.id ? 0.5 : 1,
-              cursor: deletingId === inv.id ? 'not-allowed' : 'pointer',
-            }}
-            onClick={() => setConfirmId(inv.id)}
-            disabled={deletingId === inv.id}
-          >
-            {deletingId === inv.id ? 'Deleting...' : 'Delete'}
-          </button>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
