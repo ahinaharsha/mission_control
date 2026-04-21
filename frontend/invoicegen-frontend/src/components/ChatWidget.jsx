@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-const SYSTEM_GREETING = "Hello! How can I help you today? I can assist with invoicing questions, Peppol UBL standards, GST, and more.";
+const SYSTEM_GREETING = "Hello! How can I help you today? I can assist with invoicing questions, Peppol UBL standards, GST, and more. You can also ask me to **create an invoice** by describing what you need!";
 
 export default function ChatWidget({ token, onNavigate }) {
   const [open, setOpen] = useState(false);
@@ -26,6 +26,11 @@ export default function ChatWidget({ token, onNavigate }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const isInvoiceRequest = (text) => {
+    const keywords = ['create an invoice', 'generate an invoice', 'make an invoice', 'create invoice', 'generate invoice', 'make invoice'];
+    return keywords.some(k => text.toLowerCase().includes(k));
+  };
+
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
@@ -45,16 +50,33 @@ export default function ChatWidget({ token, onNavigate }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/ai/chat`, {
+      const isInvoice = isInvoiceRequest(text);
+      const endpoint = isInvoice
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/ai/invoice/generate`
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/ai/chat`;
+
+      const body = isInvoice
+        ? JSON.stringify({ description: text })
+        : JSON.stringify({ message: text });
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', token },
-        body: JSON.stringify({ message: text })
+        body
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
-      if (data.messagesRemaining !== null && data.messagesRemaining !== undefined) {
-        setRemaining(data.messagesRemaining);
+      if (!res.ok) throw new Error(data.error || data.message || `Error ${res.status}`);
+
+      if (isInvoice && data.invoiceId) {
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `✅ Invoice created successfully!\n\n**Invoice ID:** \`${data.invoiceId}\`\n\nSave this ID to retrieve, track or download your invoice.`
+        }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+        if (data.messagesRemaining !== null && data.messagesRemaining !== undefined) {
+          setRemaining(data.messagesRemaining);
+        }
       }
     } catch (err) {
       setError(err.message || 'Something went wrong.');
@@ -180,7 +202,7 @@ export default function ChatWidget({ token, onNavigate }) {
                 ref={inputRef}
                 className="chat-input-field"
                 style={w.input}
-                placeholder="Ask about invoicing…"
+                placeholder="Ask about invoicing or say 'create an invoice'…"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
