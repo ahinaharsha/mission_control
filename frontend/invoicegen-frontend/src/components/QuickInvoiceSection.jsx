@@ -190,7 +190,7 @@ export default function QuickInvoiceSection({ onNavigate }) {
                 By using Quick Invoice, you will <strong style={{ color: 'rgba(255,255,255,0.7)' }}>not</strong> be able to retrieve, track, or update the invoice as it is not stored in our database. To store it within our database please{' '}
                 <span style={qs.disclaimerLink} onClick={() => document.dispatchEvent(new CustomEvent('qi-navigate', { detail: 'login' }))}>login</span>
                 {' '}or{' '}
-                <span style={qs.disclaimerLink} onClick={() => document.dispatchEvent(new CustomEvent('qi-navigate', { detail: 'register' }))}>sign up</span>.
+                <span style={qs.disclaimerLink} onClick={() => document.dispatchEvent(new CustomEvent('qi-navigate', { detail: 'register' }))}>register</span>.
               </p>
             </div>
           </div>
