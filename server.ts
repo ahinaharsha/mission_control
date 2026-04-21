@@ -215,6 +215,24 @@ app.put('/v1/invoices/:id/status', async (req: Request, res: Response) => {
     
 });
 
+app.get('/v1/invoices', async (req: Request, res: Response) => {
+  try {
+    const token = req.header('token');
+    authenticate(token);
+    const decoded = jwt.decode(token as string) as { userId: string };
+    const result = await pool.query(
+      `SELECT invoiceId, invoiceData, status, createdAt FROM invoices WHERE userId = $1 ORDER BY createdAt DESC`,
+      [decoded.userId]
+    );
+    return res.status(200).json({ invoices: result.rows });
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return res.status(e.statusCode).json({ error: e.message });
+    }
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 app.post('/v1/ai/chat', async (req: Request, res: Response) => {
   try {
     const token = req.header('token');
