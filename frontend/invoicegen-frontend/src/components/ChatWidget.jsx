@@ -44,7 +44,7 @@ export default function ChatWidget({ token, onNavigate }) {
     setLoading(true);
 
     try {
-      const res = await fetch('/chat', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', token },
         body: JSON.stringify({ message: text })
