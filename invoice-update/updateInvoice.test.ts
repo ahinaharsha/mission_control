@@ -84,7 +84,7 @@ beforeEach(async () => {
 
   const res = await request(app)
     .post('/v1/invoices')
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .set('Content-Type', 'application/xml')
     .send(validxml);
 
@@ -99,7 +99,7 @@ describe('PUT /v1/invoices/:id', () => {
   test('Successfully updates a draft invoice', async () => {
     const res = await request(app)
       .put(`/v1/invoices/${invoiceId}`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send(validUpdate);
     expect(res.body).toStrictEqual({ message: expect.any(String) });
     expect(res.statusCode).toStrictEqual(200);
@@ -108,7 +108,7 @@ describe('PUT /v1/invoices/:id', () => {
 	test('Successfully updates lineItems, currency, tax and from', async () => {
   const res = await request(app)
     .put(`/v1/invoices/${invoiceId}`)
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .send({
       lineItems: [{ description: 'New Item', quantity: 5, rate: 20 }],
       currency: 'USD',
@@ -153,7 +153,7 @@ test('Successfully updates invoice with no dueDate', async () => {
 
   const res = await request(app)
     .put(`/v1/invoices/22222222-2222-2222-2222-222222222222`)
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .send(validUpdate);
   expect(res.body).toStrictEqual({ message: expect.any(String) });
   expect(res.statusCode).toStrictEqual(200);
@@ -170,7 +170,7 @@ test('Successfully updates invoice with no dueDate', async () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .put(`/v1/invoices/${invoiceId}`)
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send(validUpdate);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -183,7 +183,7 @@ test('Successfully updates invoice with no dueDate', async () => {
   );
   const res = await request(app)
     .put(`/v1/invoices/11111111-1111-1111-1111-111111111111`)
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .send(validUpdate);
   expect(res.body).toStrictEqual({ error: expect.any(String) });
   expect(res.statusCode).toStrictEqual(404);
@@ -192,7 +192,7 @@ test('Successfully updates invoice with no dueDate', async () => {
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
       .put(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send(validUpdate);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -204,7 +204,7 @@ test('Successfully updates invoice with no dueDate', async () => {
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
     const res = await request(app)
       .put(`/v1/invoices/${invoiceId}`)
-      .set('token', otherLogin.token)
+      .set('Authorization', `Bearer ${otherLogin.token}`)
       .send(validUpdate);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
@@ -217,7 +217,7 @@ test('Successfully updates invoice with no dueDate', async () => {
     );
     const res = await request(app)
       .put(`/v1/invoices/${invoiceId}`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send(validUpdate);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(409);
@@ -226,7 +226,7 @@ test('Successfully updates invoice with no dueDate', async () => {
   test('Invalid update body returns 400', async () => {
     const res = await request(app)
       .put(`/v1/invoices/${invoiceId}`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ customer: {
         fullName: '',
         email: '',

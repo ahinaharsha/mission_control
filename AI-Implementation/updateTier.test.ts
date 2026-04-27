@@ -25,7 +25,7 @@ describe('PUT /v1/users/tier', () => {
   test('Successfully upgrades user to pro', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'pro' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.message).toStrictEqual(expect.any(String));
@@ -35,11 +35,11 @@ describe('PUT /v1/users/tier', () => {
   test('Successfully downgrades user to standard', async () => {
     await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'pro' });
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'standard' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.tier).toBe('standard');
@@ -48,7 +48,7 @@ describe('PUT /v1/users/tier', () => {
   test('Invalid tier', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'enterprise' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -57,7 +57,7 @@ describe('PUT /v1/users/tier', () => {
   test('Missing tier', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({});
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -74,7 +74,7 @@ describe('PUT /v1/users/tier', () => {
   test('Invalid token', async () => {
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send({ tier: 'pro' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -83,7 +83,7 @@ describe('PUT /v1/users/tier', () => {
   test('Tier is actually updated in database', async () => {
     await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'pro' });
 
     const decoded = require('jsonwebtoken').decode(token) as { userId: string };
@@ -99,7 +99,7 @@ describe('PUT /v1/users/tier', () => {
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)
       .put('/v1/users/tier')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ tier: 'pro' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);

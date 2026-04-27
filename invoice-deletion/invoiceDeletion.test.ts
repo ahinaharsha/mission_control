@@ -63,7 +63,7 @@ beforeEach(async () => {
 
   await request(app)
     .post('/v1/invoices')
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .set('Content-Type', 'application/xml')
     .send(validxml);
 
@@ -81,7 +81,7 @@ describe('DELETE /v1/invoices/:id', () => {
   test('Successfully deletes a draft invoice', async () => {
     const res = await request(app)
       .delete(`/v1/invoices/${invoiceId}`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ message: expect.any(String) });
     expect(res.statusCode).toStrictEqual(200);
   });
@@ -89,10 +89,10 @@ describe('DELETE /v1/invoices/:id', () => {
   test('Invoice no longer exists after deletion', async () => {
     await request(app)
       .delete(`/v1/invoices/${invoiceId}`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     const res = await request(app)
       .get(`/v1/invoices/${invoiceId}`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
   });
@@ -107,7 +107,7 @@ describe('DELETE /v1/invoices/:id', () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .delete(`/v1/invoices/${invoiceId}`)
-      .set('token', 'invalidtoken');
+      .set('Authorization', 'Bearer invalidtoken');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
@@ -115,7 +115,7 @@ describe('DELETE /v1/invoices/:id', () => {
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
       .delete(`/v1/invoices/00000000-0000-0000-0000-000000000000`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
   });
@@ -126,7 +126,7 @@ describe('DELETE /v1/invoices/:id', () => {
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
     const res = await request(app)
       .delete(`/v1/invoices/${invoiceId}`)
-      .set('token', otherLogin.token);
+      .set('Authorization', `Bearer ${otherLogin.token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
   });
@@ -138,7 +138,7 @@ describe('DELETE /v1/invoices/:id', () => {
     );
     const res = await request(app)
       .delete(`/v1/invoices/${invoiceId}`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(409);
   });

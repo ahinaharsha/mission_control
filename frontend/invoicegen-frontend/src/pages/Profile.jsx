@@ -23,7 +23,7 @@ function TrackModal({ token, onClose }) {
     if (!invoiceId.trim()) { setError('Please enter an Invoice ID.'); return; }
     setLoading(true); setError(''); setStatus(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}/status`, { headers: { token } });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}/status`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Error ${res.status}`);
@@ -187,7 +187,7 @@ function InvoiceList({ onNavigate, token }) {
     async function fetchInvoices() {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices`, {
-          headers: { token }
+          headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to fetch invoices.');
@@ -208,7 +208,7 @@ function InvoiceList({ onNavigate, token }) {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId}`, {
         method: 'DELETE',
-        headers: { token },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete invoice.');

@@ -61,7 +61,7 @@ export default function ChatWidget({ token, onNavigate }) {
 
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', token },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body
       });
       const data = await res.json();
