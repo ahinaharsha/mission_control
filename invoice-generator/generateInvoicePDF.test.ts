@@ -63,7 +63,7 @@ beforeAll(async () => {
 
   await request(app)
     .post('/v1/invoices')
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .set('Content-Type', 'application/xml')
     .send(validxml);
 
@@ -86,7 +86,7 @@ describe('GET /v1/invoices/:id/pdf', () => {
   );
   const res = await request(app)
     .get(`/v1/invoices/11111111-1111-1111-1111-111111111111/pdf`)
-    .set('token', token);
+    .set('Authorization', `Bearer ${token}`);
   expect(res.statusCode).toStrictEqual(200);
 });
 
@@ -98,7 +98,7 @@ test('Returns PDF with non-standard XML root element', async () => {
   );
   const res = await request(app)
     .get(`/v1/invoices/88888888-8888-8888-8888-888888888888/pdf`)
-    .set('token', token);
+    .set('Authorization', `Bearer ${token}`);
   expect(res.statusCode).toStrictEqual(200);
 });
 
@@ -110,14 +110,14 @@ test('Returns PDF with empty XML tags', async () => {
   );
   const res = await request(app)
     .get(`/v1/invoices/22222222-2222-2222-2222-222222222222/pdf`)
-    .set('token', token);
+    .set('Authorization', `Bearer ${token}`);
   expect(res.statusCode).toStrictEqual(200);
 });
 
   test('Returns 200 and a PDF for a valid invoice', async () => {
     const res = await request(app)
       .get(`/v1/invoices/${invoiceId}/pdf`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toStrictEqual(200);
     expect(res.headers['content-type']).toContain('application/pdf');
     expect(Buffer.from(res.body).subarray(0, 4).toString()).toStrictEqual('%PDF');
@@ -150,7 +150,7 @@ test('Returns PDF with empty XML tags', async () => {
   );
   const res = await request(app)
     .get(`/v1/invoices/33333333-3333-3333-3333-333333333333/pdf`)
-    .set('token', token);
+    .set('Authorization', `Bearer ${token}`);
   expect(res.statusCode).toStrictEqual(200);
 });
 
@@ -164,7 +164,7 @@ test('Returns PDF with empty XML tags', async () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .get(`/v1/invoices/${invoiceId}/pdf`)
-      .set('token', 'invalidtoken');
+      .set('Authorization', 'Bearer invalidtoken');
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
   });
@@ -172,7 +172,7 @@ test('Returns PDF with empty XML tags', async () => {
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
       .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/pdf`)
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
   });
@@ -183,7 +183,7 @@ test('Returns PDF with empty XML tags', async () => {
     const otherLogin = await authLogin(otherEmail, 'correctpassword123');
     const res = await request(app)
       .get(`/v1/invoices/${invoiceId}/pdf`)
-      .set('token', otherLogin.token);
+      .set('Authorization', `Bearer ${otherLogin.token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
   });

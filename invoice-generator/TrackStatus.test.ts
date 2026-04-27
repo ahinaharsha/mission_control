@@ -202,7 +202,7 @@ beforeAll(async () => {
   // Create an invoice to test with
   await request(app)
     .post('/v1/invoices')
-    .set('token', token)
+    .set('Authorization', `Bearer ${token}`)
     .set('Content-Type', 'application/xml')
     .send(validxml);
 
@@ -220,7 +220,7 @@ describe('getstatus', () => {
     test('should return the status of an existing invoice', async () => {
         const res = await request(app)
         .get(`/v1/invoices/${invoiceId}/status`)
-        .set('token', token)
+        .set('Authorization', `Bearer ${token}`)
         .set('invoiceId', invoiceId);
 
         expect(res.statusCode).toStrictEqual(200);
@@ -231,7 +231,7 @@ describe('getstatus', () => {
     test('should return 404 for non-existent invoice', async () => {
         const res = await request(app)
         .get(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
-        .set('token', token)
+        .set('Authorization', `Bearer ${token}`)
         .set('invoiceId', '00000000-0000-0000-0000-000000000000');
 
         expect(res.statusCode).toStrictEqual(404);
@@ -244,7 +244,7 @@ describe('getstatus', () => {
   		);
   		const res = await request(app)
     		.get(`/v1/invoices/44444444-4444-4444-4444-444444444444/status`)
-    		.set('token', token);
+    		.set('Authorization', `Bearer ${token}`);
   		expect(res.statusCode).toStrictEqual(200);
 	});
 
@@ -255,7 +255,7 @@ describe('getstatus', () => {
 		);
 		const res = await request(app)
 			.get(`/v1/invoices/55555555-5555-5555-5555-555555555555/status`)
-			.set('token', token);
+			.set('Authorization', `Bearer ${token}`);
 		expect(res.statusCode).toStrictEqual(200);
 	});
 
@@ -281,7 +281,7 @@ describe('getstatus', () => {
 		);
 		const res = await request(app)
 			.get(`/v1/invoices/66666666-6666-6666-6666-666666666666/status`)
-			.set('token', token);
+			.set('Authorization', `Bearer ${token}`);
 		expect(res.statusCode).toStrictEqual(200);
 		expect(res.body.status).toBe('Overdue');
 	});
@@ -295,7 +295,7 @@ describe('getstatus', () => {
         
         const res = await request(app)
         .get(`/v1/invoices/${invoiceId}/status`)
-        .set('token', token2)
+        .set('Authorization', `Bearer ${token2}`)
         .set('invoiceId', invoiceId);
         
         expect(res.statusCode).toStrictEqual(403);
@@ -307,7 +307,7 @@ describe('getstatus', () => {
 
 	const res = await request(app)
 		.get(`/v1/invoices/${invoiceId}/status`)
-		.set('token', token)	
+		.set('Authorization', `Bearer ${token}`)	
 		.set('invoiceId', invoiceId);
     
 	expect(res.statusCode).toStrictEqual(200);
@@ -321,7 +321,7 @@ describe('getstatus', () => {
 	);
 	const res = await request(app)
 		.get(`/v1/invoices/77777777-7777-7777-7777-777777777777/status`)
-		.set('token', token);
+		.set('Authorization', `Bearer ${token}`);
 	expect(res.statusCode).toStrictEqual(200);
 	expect(res.body.status).toBe('Overdue');
 	});   
@@ -331,7 +331,7 @@ describe('UpdateStatus', () => {
 	test('should update the status of an existing invoice', async () => {
 		const res = await request(app)
 		.put(`/v1/invoices/${invoiceId}/status`)
-		.set('token', token)
+		.set('Authorization', `Bearer ${token}`)
 		.set('invoiceId', invoiceId)
 		.send({ status: 'Paid' });
 		
@@ -343,7 +343,7 @@ describe('UpdateStatus', () => {
 	test('should return 400 for invalid status value', async () => {
 		const res = await request(app)
 			.put(`/v1/invoices/${invoiceId}/status`)
-			.set('token', token)
+			.set('Authorization', `Bearer ${token}`)
 			.send({ status: 'InvalidStatus' });
 		expect(res.statusCode).toStrictEqual(400);
 		expect(res.body).toStrictEqual({ error: expect.any(String) });
@@ -352,7 +352,7 @@ describe('UpdateStatus', () => {
 	test('should return 404 for non-existent invoice', async () => {
 		const res = await request(app)	
 		.put(`/v1/invoices/00000000-0000-0000-0000-000000000000/status`)
-		.set('token', token)
+		.set('Authorization', `Bearer ${token}`)
 		.set('invoiceId', '00000000-0000-0000-0000-000000000000')
 		.send({ status: 'Paid' });
 
@@ -367,7 +367,7 @@ describe('UpdateStatus', () => {
 		const otherLogin = await authLogin(otherEmail, 'correctpassword123');
 		const res = await request(app)
 			.put(`/v1/invoices/${invoiceId}/status`)
-			.set('token', otherLogin.token)
+			.set('Authorization', `Bearer ${otherLogin.token}`)
 			.send({ status: 'Paid' });
 		expect(res.statusCode).toStrictEqual(403);
 		expect(res.body).toStrictEqual({ error: expect.any(String) });

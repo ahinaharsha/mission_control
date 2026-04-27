@@ -36,6 +36,11 @@ app.use('/docs', sui.serve, sui.setup(YAML.parse(file)));
 const PORT: number = parseInt(process.env.PORT || '3000');
 const HOST: string = process.env.IP || '127.0.0.1';
 
+// Helper to extract token from Authorization header
+function getToken(req: Request): string | undefined {
+  return req.header('Authorization')?.replace('Bearer ', '');
+}
+
 // ===============================================================================
 //  ================= Make your routes under this comment guys ===================
 // ===============================================================================
@@ -53,7 +58,6 @@ app.post('/v1/auth/register', async (req: Request, res: Response) => {
   }
 });
 
-// POST /auth/login
 app.post('/v1/auth/login', async (req: Request, res: Response) => {
   try {
     const result = await authLogin(req.body.email, req.body.password);
@@ -67,10 +71,9 @@ app.post('/v1/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-// POST /auth/logout
 app.post('/v1/auth/logout', async (req: Request, res: Response) => {
   try {
-    await authLogout(req.header('token'));
+    await authLogout(getToken(req));
     res.status(200).json({ message: 'Logged out successfully.' });
   } catch (e) {
     if (e instanceof HttpError) {
@@ -81,14 +84,13 @@ app.post('/v1/auth/logout', async (req: Request, res: Response) => {
   }
 });
 
-// POST/invoices
 app.post('/v1/invoices', async (req: Request, res: Response) => {
   try {
     const xml = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
 
     if (!xml || xml.trim() === '' || xml === '{}' || !xml.trim().startsWith('<')) {
       return res.status(400).json({ error: "Invalid XML format." });
-    } 
+    }
 
     if (!xml || xml.trim() === '' || xml === '{}') {
       return res.status(400).json({
@@ -96,7 +98,7 @@ app.post('/v1/invoices', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await generateInvoice(xml, req.header('token'));
+    const result = await generateInvoice(xml, getToken(req));
 
     if (result.code !== 200) {
       return res.status(result.code).json({
@@ -114,7 +116,6 @@ app.post('/v1/invoices', async (req: Request, res: Response) => {
     if (error instanceof HttpError) {
       return res.status(error.statusCode).json({ error: error.message });
     }
-
     console.error(error);
     return res.status(500).json({
       error: "Internal server error"
@@ -124,9 +125,7 @@ app.post('/v1/invoices', async (req: Request, res: Response) => {
 
 app.get('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
-    const invoice = await retrieveInvoices(invoiceId, token);
+    const invoice = await retrieveInvoices(req.params.id as string, getToken(req));
     return res.status(200).json(invoice);
   } catch (error) {
     if (error instanceof HttpError) {
@@ -138,9 +137,7 @@ app.get('/v1/invoices/:id', async (req: Request, res: Response) => {
 
 app.put('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
-    const result = await updateInvoice(invoiceId, token, req.body);
+    const result = await updateInvoice(req.params.id as string, getToken(req), req.body);
     res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -152,9 +149,7 @@ app.put('/v1/invoices/:id', async (req: Request, res: Response) => {
 
 app.delete('/v1/invoices/:id', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
-    const result = await deleteInvoice(invoiceId, token);
+    const result = await deleteInvoice(req.params.id as string, getToken(req));
     res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -166,9 +161,7 @@ app.delete('/v1/invoices/:id', async (req: Request, res: Response) => {
 
 app.get('/v1/invoices/:id/pdf', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
-    const pdfBuffer = await getInvoicePDF(invoiceId, token);
+    const pdfBuffer = await getInvoicePDF(req.params.id as string, getToken(req));
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="invoice-${req.params.id}.pdf"`);
     res.status(200).send(pdfBuffer);
@@ -180,12 +173,9 @@ app.get('/v1/invoices/:id/pdf', async (req: Request, res: Response) => {
   }
 });
 
-//getting invoice status
 app.get('/v1/invoices/:id/status', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
-    const status = await getStatus(invoiceId, token);
+    const status = await getStatus(req.params.id as string, getToken(req));
     return res.status(200).json({ status });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -195,16 +185,10 @@ app.get('/v1/invoices/:id/status', async (req: Request, res: Response) => {
   }
 });
 
-//adding invoice status update route.
 app.put('/v1/invoices/:id/status', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
     const { status: newStatus } = req.body;
-    
-    // this doesnt work
-    await updateStatus(invoiceId, newStatus, token);
-    
+    await updateStatus(req.params.id as string, newStatus, getToken(req));
     return res.status(200).json({ message: 'Status updated successfully.' });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -212,12 +196,11 @@ app.put('/v1/invoices/:id/status', async (req: Request, res: Response) => {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-    
 });
 
 app.get('/v1/invoices', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
+    const token = getToken(req);
     authenticate(token);
     const decoded = jwt.decode(token as string) as { userId: string };
     const result = await pool.query(
@@ -235,12 +218,11 @@ app.get('/v1/invoices', async (req: Request, res: Response) => {
 
 app.post('/v1/ai/chat', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
     const { message } = req.body;
     if (!message) {
       return res.status(400).json({ error: 'Message is required.' });
     }
-    const result = await chat(token, message);
+    const result = await chat(getToken(req), message);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -253,8 +235,7 @@ app.post('/v1/ai/chat', async (req: Request, res: Response) => {
 
 app.delete('/v1/ai/chat/history', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const result = await clearChatHistory(token);
+    const result = await clearChatHistory(getToken(req));
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -266,12 +247,11 @@ app.delete('/v1/ai/chat/history', async (req: Request, res: Response) => {
 
 app.put('/v1/users/tier', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
     const { tier } = req.body;
     if (!tier) {
       return res.status(400).json({ error: 'Tier is required.' });
     }
-    const result = await updateTier(token, tier);
+    const result = await updateTier(getToken(req), tier);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -284,12 +264,11 @@ app.put('/v1/users/tier', async (req: Request, res: Response) => {
 
 app.post('/v1/ai/invoice/generate', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
     const { description } = req.body;
     if (!description) {
       return res.status(400).json({ error: 'Description is required.' });
     }
-    const result = await generateInvoiceFromAI(token, description);
+    const result = await generateInvoiceFromAI(getToken(req), description);
     return res.status(201).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -302,12 +281,11 @@ app.post('/v1/ai/invoice/generate', async (req: Request, res: Response) => {
 
 app.post('/v1/ai/invoice/autofill', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
     const { description } = req.body;
     if (!description) {
       return res.status(400).json({ error: 'Description is required.' });
     }
-    const result = await autofillInvoiceFromAI(token, description);
+    const result = await autofillInvoiceFromAI(getToken(req), description);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -320,13 +298,11 @@ app.post('/v1/ai/invoice/autofill', async (req: Request, res: Response) => {
 
 app.post('/v1/ai/invoice/update/:id', async (req: Request, res: Response) => {
   try {
-    const token = req.header('token');
-    const invoiceId = req.params.id as string;
     const { description } = req.body;
-    if (!description) {
+    if (!description || typeof description !== 'string') {
       return res.status(400).json({ error: 'Description is required.' });
     }
-    const result = await updateInvoiceFromAI(token, invoiceId, description);
+    const result = await updateInvoiceFromAI(getToken(req), req.params.id as string, description);
     return res.status(200).json(result);
   } catch (e) {
     if (e instanceof HttpError) {
@@ -336,7 +312,6 @@ app.post('/v1/ai/invoice/update/:id', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Internal server error.' });
   }
 });
-
 
 // Start server
 const server = app.listen(PORT, HOST, () => {

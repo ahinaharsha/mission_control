@@ -96,7 +96,7 @@ describe('POST /v1/ai/invoice/generate', () => {
   test('Standard user can generate an invoice', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Create an invoice for Sarah Johnson for 10 hours of cloud consulting at $250 per hour' });
     expect(res.statusCode).toStrictEqual(201);
     expect(res.body.message).toBe('Invoice generated successfully.');
@@ -107,7 +107,7 @@ describe('POST /v1/ai/invoice/generate', () => {
   test('Pro user can generate an invoice', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Create an invoice for Sarah Johnson for 10 hours of cloud consulting at $250 per hour' });
     expect(res.statusCode).toStrictEqual(201);
     expect(res.body.invoiceId).toBeDefined();
@@ -116,7 +116,7 @@ describe('POST /v1/ai/invoice/generate', () => {
   test('Invoice is saved to database', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Create an invoice for Sarah Johnson for 10 hours of cloud consulting at $250 per hour' });
     
     const result = await pool.query(
@@ -130,7 +130,7 @@ describe('POST /v1/ai/invoice/generate', () => {
   test('Missing description returns 400', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({});
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -147,7 +147,7 @@ describe('POST /v1/ai/invoice/generate', () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -161,7 +161,7 @@ describe('POST /v1/ai/invoice/generate', () => {
     );
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(429);
@@ -172,7 +172,7 @@ describe('POST /v1/ai/invoice/generate', () => {
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)
       .post('/v1/ai/invoice/generate')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -183,7 +183,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
   test('Pro user can autofill invoice fields', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Create an invoice for Sarah Johnson for 10 hours of cloud consulting at $250 per hour' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.message).toBe('Invoice fields generated successfully. Please review and submit.');
@@ -193,7 +193,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
   test('Invoice is not saved to database for autofill', async () => {
     await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Create an invoice for Sarah Johnson' });
 
     const result = await pool.query(`SELECT * FROM invoices`);
@@ -203,7 +203,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
   test('Standard user cannot use autofill', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
@@ -212,7 +212,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
   test('Missing description returns 400', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({});
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -229,7 +229,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -240,7 +240,7 @@ describe('POST /v1/ai/invoice/autofill', () => {
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)
       .post('/v1/ai/invoice/autofill')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Create an invoice for Sarah Johnson' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -281,7 +281,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Pro user can update invoice with AI', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.message).toBe('Invoice fields updated successfully. Please review and submit.');
@@ -291,7 +291,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Standard user cannot use AI invoice update', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
@@ -300,7 +300,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Invoice not found returns 404', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/00000000-0000-0000-0000-000000000000`)
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -309,7 +309,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Invoice belonging to another user returns 403', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
@@ -319,7 +319,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
     await pool.query(`UPDATE invoices SET status = 'Paid' WHERE invoiceId = $1`, [invoiceId]);
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(409);
@@ -328,7 +328,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Missing description returns 400', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({});
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -345,7 +345,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
   test('Invalid token returns 401', async () => {
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -360,7 +360,7 @@ describe('POST /v1/ai/invoice/update/:id', () => {
 
     const res = await request(app)
       .post(`/v1/ai/invoice/update/${invoiceId}`)
-      .set('token', otherLogin.token)
+      .set('Authorization', `Bearer ${otherLogin.token}`)
       .send({ description: 'Change the customer name to Jane Smith' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);

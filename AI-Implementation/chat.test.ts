@@ -52,7 +52,7 @@ describe('POST /v1/ai/chat', () => {
   test('Standard user can send a message and receive a response', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ message: 'What is a Peppol invoice?' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.message).toStrictEqual(expect.any(String));
@@ -63,7 +63,7 @@ describe('POST /v1/ai/chat', () => {
   test('Pro user can send a message and receive a response', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ message: 'How do I create an invoice?' });
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body.message).toStrictEqual(expect.any(String));
@@ -74,7 +74,7 @@ describe('POST /v1/ai/chat', () => {
   test('Pro user chat history is stored', async () => {
     await request(app)
       .post('/v1/ai/chat')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ message: 'What is GST?' });
 
     const decoded = require('jsonwebtoken').decode(proToken) as { userId: string };
@@ -88,7 +88,7 @@ describe('POST /v1/ai/chat', () => {
   test('Standard user chat history is not stored', async () => {
     await request(app)
       .post('/v1/ai/chat')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ message: 'What is GST?' });
 
     const decoded = require('jsonwebtoken').decode(token) as { userId: string };
@@ -102,7 +102,7 @@ describe('POST /v1/ai/chat', () => {
   test('Missing message', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({});
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(400);
@@ -119,7 +119,7 @@ describe('POST /v1/ai/chat', () => {
   test('Invalid token', async () => {
     const res = await request(app)
       .post('/v1/ai/chat')
-      .set('token', 'invalidtoken')
+      .set('Authorization', 'Bearer invalidtoken')
       .send({ message: 'What is GST?' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(401);
@@ -133,7 +133,7 @@ describe('POST /v1/ai/chat', () => {
     );
     const res = await request(app)
       .post('/v1/ai/chat')
-      .set('token', token)
+      .set('Authorization', `Bearer ${token}`)
       .send({ message: 'What is GST?' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(429);
@@ -144,7 +144,7 @@ describe('POST /v1/ai/chat', () => {
     await pool.query(`DELETE FROM users WHERE userId = $1`, [decoded.userId]);
     const res = await request(app)
         .post('/v1/ai/chat')
-        .set('token', token)
+        .set('Authorization', `Bearer ${token}`)
         .send({ message: 'What is GST?' });
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(404);
@@ -155,12 +155,12 @@ describe('DELETE /v1/ai/chat/history', () => {
   test('Pro user can clear chat history', async () => {
     await request(app)
       .post('/v1/ai/chat')
-      .set('token', proToken)
+      .set('Authorization', `Bearer ${proToken}`)
       .send({ message: 'What is GST?' });
 
     const res = await request(app)
       .delete('/v1/ai/chat/history')
-      .set('token', proToken);
+      .set('Authorization', `Bearer ${proToken}`);
     expect(res.statusCode).toStrictEqual(200);
     expect(res.body).toStrictEqual({ message: expect.any(String) });
 
@@ -175,7 +175,7 @@ describe('DELETE /v1/ai/chat/history', () => {
   test('Standard user cannot clear chat history', async () => {
     const res = await request(app)
       .delete('/v1/ai/chat/history')
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.body).toStrictEqual({ error: expect.any(String) });
     expect(res.statusCode).toStrictEqual(403);
   });

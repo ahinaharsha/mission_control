@@ -21,7 +21,7 @@ export function TrackModal({ token, onClose }) {
     setLoading(true); setError(''); setStatus(null);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/v1/invoices/${invoiceId.trim()}/status`, {
-        headers: { token },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

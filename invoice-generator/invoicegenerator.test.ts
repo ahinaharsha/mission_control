@@ -208,7 +208,7 @@ describe("Invoice Generator", () => {
 
     const res = await request(app)
       .post('/v1/invoices')
-      .set('token', tokenRes.token)
+      .set('Authorization', `Bearer ${tokenRes.token}`)
       .set('Content-Type', 'application/xml')
       .send(validxml);
 
@@ -225,7 +225,7 @@ describe("Invoice Generator", () => {
 
     const res = await request(app)
       .post('/v1/invoices')
-      .set('token', tokenRes.token)
+      .set('Authorization', `Bearer ${tokenRes.token}`)
       .set('Content-Type', 'application/xml')
       .send(invalidxml);
 
@@ -240,7 +240,7 @@ describe("Invoice Generator", () => {
 
     const res = await request(app)
       .post('/v1/invoices')
-      .set('token', tokenRes.token)
+      .set('Authorization', `Bearer ${tokenRes.token}`)
       .set('Content-Type', 'application/xml')
       .send(noxml);
 

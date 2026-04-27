@@ -147,7 +147,7 @@ describe('POST /v1/auth/logout', () => {
     const { token } = loginRes.body;
     const res = await request(app)
       .post('/v1/auth/logout')
-      .set('token', token);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toStrictEqual(200);
   });
 

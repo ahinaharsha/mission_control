@@ -37,7 +37,7 @@ export async function createInvoice(xml, token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/xml',
-      token,
+      'Authorization': `Bearer ${token}`,
     },
     body: xml,
   });
