@@ -25,7 +25,7 @@ export async function login(email, password) {
 export async function logout(token) {
   const res = await fetch(`${BASE_URL}/v1/auth/logout`, {
     method: 'POST',
-    headers: { token },
+    headers: { 'Authorization': `Bearer ${token}` },
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Logout failed');
